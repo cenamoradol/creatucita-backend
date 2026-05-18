@@ -2,7 +2,7 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -33,7 +33,31 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return await this.userRepository.find();
+    return await this.userRepository.find({
+      withDeleted: false,
+      select: ['id', 'email', 'name', 'role', 'telephone', 'locationCountry', 'locationCity', 'isActive', 'createdAt', 'updatedAt'],
+    });
+  }
+
+  async findAllWithDeleted(): Promise<User[]> {
+    return await this.userRepository.find({
+      withDeleted: true,
+      select: ['id', 'email', 'name', 'role', 'telephone', 'locationCountry', 'locationCity', 'isActive', 'createdAt', 'updatedAt', 'deletedAt'],
+    });
+  }
+
+  async findAllClients(): Promise<User[]> {
+    return await this.userRepository.find({
+      where: { role: UserRole.CLIENT },
+      select: ['id', 'email', 'name', 'role', 'telephone', 'locationCountry', 'locationCity', 'isActive', 'createdAt', 'updatedAt'],
+    });
+  }
+
+  async findAllSpecialists(): Promise<User[]> {
+    return await this.userRepository.find({
+      where: { role: UserRole.SPECIALIST },
+      select: ['id', 'email', 'name', 'role', 'telephone', 'locationCountry', 'locationCity', 'isActive', 'createdAt', 'updatedAt'],
+    });
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -58,6 +82,11 @@ export class UsersService {
   }
 
   async remove(id: string): Promise<void> {
-    await this.userRepository.delete(id);
+    await this.userRepository.softDelete(id);
+  }
+
+  async restore(id: string): Promise<User | null> {
+    await this.userRepository.restore(id);
+    return this.findOne(id);
   }
 }

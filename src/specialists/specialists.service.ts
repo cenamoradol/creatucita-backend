@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Specialist, SpecialistStatus } from './entities/specialist.entity';
 import { Note } from './entities/note.entity';
 import { Reminder } from './entities/reminder.entity';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { SchedulesService } from '../schedules/schedules.service';
 import { AppointmentsService } from '../appointments/appointments.service';
 import { ApplySpecialistDto } from './dto/apply-specialist.dto';
@@ -113,6 +113,7 @@ export class SpecialistsService {
   async findByUser(userId: string): Promise<Specialist | null> {
     return await this.specialistRepository.findOne({
       where: { user: { id: userId } },
+      relations: ['user'],
     });
   }
 
@@ -223,6 +224,26 @@ export class SpecialistsService {
     return availableSlots;
   }
 
+  async updateProfile(userId: string, data: { name?: string; phone?: string; bio?: string }) {
+    const specialist = await this.findByUser(userId);
+    if (!specialist) throw new NotFoundException('Especialista no encontrado');
+
+    if (data.name) {
+      specialist.user.name = data.name;
+      await this.specialistRepository.manager.save(specialist.user);
+    }
+
+    if (data.phone !== undefined) {
+      specialist.phone = data.phone;
+    }
+
+    if (data.bio !== undefined) {
+      specialist.bio = data.bio;
+    }
+
+    return await this.specialistRepository.save(specialist);
+  }
+
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
@@ -232,5 +253,43 @@ export class SpecialistsService {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`;
+  }
+
+  async findPending(): Promise<Specialist[]> {
+    return await this.specialistRepository.find({
+      where: { status: SpecialistStatus.PENDING },
+      relations: ['user', 'subcategories'],
+    });
+  }
+
+  async approve(id: string): Promise<Specialist> {
+    const specialist = await this.specialistRepository.findOne({ 
+      where: { id },
+      relations: ['user'] 
+    });
+    if (!specialist) throw new NotFoundException('Especialista no encontrado');
+    
+    specialist.status = SpecialistStatus.APPROVED;
+    specialist.user.role = UserRole.SPECIALIST;
+    
+    await this.specialistRepository.manager.save(specialist.user);
+    return await this.specialistRepository.save(specialist);
+  }
+
+  async reject(id: string): Promise<Specialist> {
+    const specialist = await this.specialistRepository.findOne({ 
+      where: { id },
+      relations: ['user'] 
+    });
+    if (!specialist) throw new NotFoundException('Especialista no encontrado');
+    
+    specialist.status = SpecialistStatus.REJECTED;
+    return await this.specialistRepository.save(specialist);
+  }
+
+  async findAllSpecialists(): Promise<Specialist[]> {
+    return await this.specialistRepository.find({
+      relations: ['user', 'subcategories'],
+    });
   }
 }

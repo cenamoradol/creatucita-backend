@@ -12,6 +12,14 @@ import { UserRole } from '../users/entities/user.entity';
 export class SpecialistsController {
   constructor(private readonly specialistsService: SpecialistsService) {}
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener mis datos de especialista' })
+  async getMe(@Request() req) {
+    return this.specialistsService.findByUser(req.user.id);
+  }
+
   @Get('my-application')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -26,6 +34,14 @@ export class SpecialistsController {
   @ApiOperation({ summary: 'Obtener los datos del dashboard del especialista' })
   async getDashboard(@Request() req) {
     return this.specialistsService.getDashboardData(req.user.id);
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar perfil del especialista' })
+  async updateProfile(@Request() req, @Body() body: { name?: string; phone?: string; bio?: string }) {
+    return this.specialistsService.updateProfile(req.user.id, body);
   }
 
   @Get('notes')
@@ -148,5 +164,37 @@ export class SpecialistsController {
     @Query('date') date: string,
   ) {
     return this.specialistsService.getAvailability(id, date);
+  }
+
+  @Get('admin/pending')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener solicitudes pendientes de especialistas' })
+  getPendingApplications() {
+    return this.specialistsService.findPending();
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener todos los especialistas' })
+  getAllSpecialists() {
+    return this.specialistsService.findAllSpecialists();
+  }
+
+  @Patch('admin/:id/approve')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Aprobar solicitud de especialista' })
+  approveSpecialist(@Param('id') id: string) {
+    return this.specialistsService.approve(id);
+  }
+
+  @Patch('admin/:id/reject')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Rechazar solicitud de especialista' })
+  rejectSpecialist(@Param('id') id: string) {
+    return this.specialistsService.reject(id);
   }
 }

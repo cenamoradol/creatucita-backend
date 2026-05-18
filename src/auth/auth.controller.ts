@@ -32,4 +32,10 @@ export class AuthController {
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
+
+  @Post('create-admin')
+  @ApiOperation({ summary: 'Crear usuario admin (temporal)' })
+  createAdmin(@Body() body: { email: string; password: string; name: string }) {
+    return this.authService.createAdmin(body);
+  }
 }

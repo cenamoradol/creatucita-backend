@@ -65,4 +65,14 @@ export class AuthService {
       },
     };
   }
+
+  async createAdmin(body: { email: string; password: string; name: string }) {
+    const user = await this.usersService.create({
+      email: body.email,
+      password: body.password,
+      name: body.name,
+      role: UserRole.ADMIN,
+    });
+    return { id: user.id, email: user.email, name: user.name, role: user.role };
+  }
 }

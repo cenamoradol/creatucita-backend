@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, DeleteDateColumn } from 'typeorm';
 import { Specialist } from '../../specialists/entities/specialist.entity';
 
 export enum UserRole {
@@ -39,6 +39,9 @@ export class User {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;

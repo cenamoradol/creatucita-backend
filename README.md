@@ -1,98 +1,212 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# CreaTuCita - Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST para la gestion de citas medicas, construida con **NestJS**, **TypeORM** y **PostgreSQL**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Requisitos
 
-## Description
+- Node.js >= 18
+- npm >= 9
+- PostgreSQL >= 15
+- Docker y Docker Compose (opcional, para base de datos)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Instalacion rapida
 
-## Project setup
+### 1. Clonar el repositorio
 
 ```bash
-$ npm install
+git clone <url-del-repo>
+cd creatucita-backend
 ```
 
-## Compile and run the project
+### 2. Instalar dependencias
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+### 3. Configurar la base de datos
+
+**Opcion A - Con Docker (recomendado):**
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker-compose up -d
 ```
 
-## Deployment
+Esto levanta PostgreSQL en el puerto `5433` y pgAdmin en `http://localhost:5050`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+**Opcion B - PostgreSQL local:**
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Crea una base de datos llamada `creatucita` y actualiza el archivo `.env`:
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=tu_password
+DB_NAME=creatucita
+```
+
+### 4. Configurar variables de entorno
+
+Copia o edita el archivo `.env`:
+
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5433
+DB_USERNAME=postgres
+DB_PASSWORD=password123
+DB_NAME=creatucita
+
+# Authentication
+JWT_SECRET=super-secret-key-change-this-in-production
+JWT_EXPIRES_IN=1d
+
+# App Configuration
+PORT=3002
+NODE_ENV=development
+```
+
+### 5. Iniciar el servidor
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# Desarrollo (con hot-reload)
+npm run start:dev
+
+# Produccion
+npm run build
+npm run start:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+El servidor estara disponible en `http://localhost:3002`.
 
-## Resources
+### 6. Crear usuario administrador
 
-Check out a few resources that may come in handy when working with NestJS:
+Una vez el servidor este corriendo, ejecuta:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+curl -X POST http://localhost:3002/auth/create-admin \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@creatucita.com","password":"Admin123@","name":"Administrador"}'
+```
 
-## Support
+O con PowerShell:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3002/auth/create-admin" -Method Post -ContentType "application/json" -Body '{"email":"admin@creatucita.com","password":"Admin123@","name":"Administrador"}'
+```
 
-## Stay in touch
+**Credenciales del admin:**
+- Email: `admin@creatucita.com`
+- Password: `Admin123@`
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Scripts disponibles
 
-## License
+| Comando | Descripcion |
+|---------|-------------|
+| `npm run start:dev` | Inicia en modo desarrollo con hot-reload |
+| `npm run start:debug` | Inicia con debugger habilitado |
+| `npm run start:prod` | Inicia la version compilada |
+| `npm run build` | Compila el proyecto TypeScript |
+| `npm run lint` | Ejecuta ESLint con correccion automatica |
+| `npm run test` | Ejecuta las pruebas unitarias |
+| `npm run test:cov` | Ejecuta pruebas con cobertura |
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## API Endpoints
+
+### Autenticacion
+
+| Metodo | Ruta | Descripcion |
+|--------|------|-------------|
+| POST | `/auth/register` | Registrar cliente |
+| POST | `/auth/register-specialist` | Registrar especialista |
+| POST | `/auth/login` | Iniciar sesion |
+| POST | `/auth/create-admin` | Crear usuario admin |
+
+### Usuarios (Admin)
+
+| Metodo | Ruta | Descripcion |
+|--------|------|-------------|
+| GET | `/users` | Listar usuarios activos |
+| GET | `/users/deleted` | Listar usuarios eliminados |
+| POST | `/users` | Crear usuario |
+| PATCH | `/users/:id` | Actualizar usuario |
+| DELETE | `/users/:id` | Soft delete usuario |
+| PATCH | `/users/:id/restore` | Restaurar usuario |
+
+### Especialistas
+
+| Metodo | Ruta | Descripcion |
+|--------|------|-------------|
+| GET | `/specialists/me` | Mi perfil de especialista |
+| GET | `/specialists/dashboard` | Dashboard del especialista |
+| PATCH | `/specialists/profile` | Actualizar perfil |
+| GET | `/specialists/admin/pending` | Solicitudes pendientes (Admin) |
+| GET | `/specialists/admin/all` | Todos los especialistas (Admin) |
+| PATCH | `/specialists/admin/:id/approve` | Aprobar solicitud (Admin) |
+| PATCH | `/specialists/admin/:id/reject` | Rechazar solicitud (Admin) |
+
+### Categorias
+
+| Metodo | Ruta | Descripcion |
+|--------|------|-------------|
+| GET | `/categories` | Listar categorias |
+| POST | `/categories` | Crear categoria |
+| PATCH | `/categories/:id` | Actualizar categoria |
+| DELETE | `/categories/:id` | Eliminar categoria |
+| POST | `/categories/:id/subcategories` | Crear subcategoria |
+| PATCH | `/categories/subcategories/:id` | Actualizar subcategoria |
+| DELETE | `/categories/subcategories/:id` | Eliminar subcategoria |
+
+### Citas
+
+| Metodo | Ruta | Descripcion |
+|--------|------|-------------|
+| POST | `/appointments` | Crear cita |
+| GET | `/appointments/my-appointments` | Mis citas |
+| GET | `/appointments/specialist/upcoming` | Citas proximas del especialista |
+| PATCH | `/appointments/:id/status` | Actualizar estado de cita |
+
+## Documentacion Swagger
+
+La documentacion interactiva de la API esta disponible en:
+
+```
+http://localhost:3002/api/docs
+```
+
+## Estructura del proyecto
+
+```
+src/
+├── auth/               # Autenticacion y JWT
+├── categories/         # Categorias y subcategorias
+├── appointments/       # Gestion de citas
+├── schedules/          # Horarios y disponibilidad
+├── specialists/        # Perfiles de especialistas
+├── users/              # Gestion de usuarios
+├── offered-services/   # Servicios ofrecidos
+├── mail/               # Servicio de correo
+├── config/             # Configuraciones
+├── app.module.ts       # Modulo principal
+└── main.ts             # Punto de entrada
+```
+
+## Tecnologias
+
+- **NestJS 11** - Framework backend
+- **TypeORM** - ORM para PostgreSQL
+- **PostgreSQL** - Base de datos
+- **Passport + JWT** - Autenticacion
+- **Swagger** - Documentacion API
+- **class-validator** - Validacion de DTOs
+- **bcrypt** - Hash de contrasenas
+- **nodemailer** - Envio de correos
+
+## Notas de produccion
+
+1. Cambia `JWT_SECRET` por una clave segura y unica
+2. Cambia `synchronize: true` a `false` en `app.module.ts`
+3. Configura las variables de correo electronico en `.env`
+4. Usa HTTPS en produccion
+5. Configura CORS con dominios especificos
