@@ -55,4 +55,25 @@ export class MailService {
       this.logger.error(`Error enviando notificación a ${email}: ${error.message}`);
     }
   }
+
+  async sendPasswordResetEmail(email: string, resetCode: string) {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Recuperar Contraseña - CreaTuCita',
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee;">
+            <h2>Recuperar tu contraseña</h2>
+            <p>Has solicitado recuperar tu contraseña. Usa el siguiente código:</p>
+            <h1 style="color: #4F46E5; font-size: 32px;">${resetCode}</h1>
+            <p>Este código expira en 1 hora.</p>
+            <p>Si no solicitaste esto, ignora este correo.</p>
+          </div>
+        `,
+      });
+      this.logger.log(`Email de recuperación enviado a: ${email}`);
+    } catch (error) {
+      this.logger.error(`Error enviando email de recuperación a ${email}: ${error.message}`);
+    }
+  }
 }

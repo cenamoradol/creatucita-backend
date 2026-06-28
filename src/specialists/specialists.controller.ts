@@ -166,6 +166,53 @@ export class SpecialistsController {
     return this.specialistsService.getAvailability(id, date);
   }
 
+  @Get(':id/schedule')
+  @ApiOperation({ summary: 'Obtener horarios del especialista para booking' })
+  async getSchedule(@Param('id') id: string) {
+    const specialist = await this.specialistsService.findOne(id);
+    if (!specialist) throw new NotFoundException('Especialista no encontrado');
+    const schedules = await this.specialistsService.schedulesService.findAllBySpecialist(id);
+    const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    return schedules
+      .filter(s => s.isActive)
+      .map(s => ({
+        day: dayNames[s.dayOfWeek],
+        hour_start: s.startTime,
+        hour_end: s.endTime,
+      }));
+  }
+
+  @Get(':id/booking-info')
+  @ApiOperation({ summary: 'Obtener información completa para agendar cita' })
+  async getBookingInfo(@Param('id') id: string) {
+    const specialist = await this.specialistsService.findOne(id);
+    if (!specialist) throw new NotFoundException('Especialista no encontrado');
+    const schedules = await this.specialistsService.schedulesService.findAllBySpecialist(id);
+    const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const services = await this.specialistsService.getOfferedServices(id);
+    return {
+      especialistaid: specialist.id,
+      especialista_name: specialist.user.name,
+      especialista_ciudad: specialist.user.locationCity || '',
+      especialista_pais: specialist.user.locationCountry || '',
+      especialista_biografia: specialist.bio || null,
+      horarios: schedules
+        .filter(s => s.isActive)
+        .map(s => ({
+          day: dayNames[s.dayOfWeek],
+          hour_start: s.startTime,
+          hour_end: s.endTime,
+        })),
+      servicios: services.map(s => ({
+        id: s.id,
+        specialty: s.specialty,
+        specialties: s.specialties,
+        price: s.price,
+        duration: s.duration,
+      })),
+    };
+  }
+
   @Get('admin/pending')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

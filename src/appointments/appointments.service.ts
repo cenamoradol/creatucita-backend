@@ -1,9 +1,10 @@
-import { Injectable, ConflictException, BadRequestException, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, LessThan, And } from 'typeorm';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
 import { SpecialistsService } from '../specialists/specialists.service';
 import { SchedulesService } from '../schedules/schedules.service';
 import { MailService } from '../mail/mail.service';
@@ -13,6 +14,7 @@ export class AppointmentsService {
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
+    private readonly usersService: UsersService,
     @Inject(forwardRef(() => SpecialistsService))
     private readonly specialistsService: SpecialistsService,
     private readonly schedulesService: SchedulesService,
@@ -196,5 +198,91 @@ export class AppointmentsService {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`;
+  }
+
+  async getAvailableTimes(specialistId: string, date: string) {
+    const [year, month, day] = date.split('-').map(Number);
+    const dayOfWeek = new Date(year, month - 1, day).getDay();
+    const schedules = await this.schedulesService.findByDay(specialistId, dayOfWeek);
+
+    if (!schedules || schedules.length === 0) {
+      return { availableTimes: [], message: 'El especialista no atiende este día' };
+    }
+
+    const appointments = await this.findAllActiveByDate(specialistId, date);
+    const bookedTimes = appointments.map(app => ({
+      start: app.startTime,
+      end: app.endTime,
+    }));
+
+    const availableTimes: string[] = [];
+
+    for (const schedule of schedules) {
+      const startMinutes = this.timeToMinutes(schedule.startTime);
+      const endMinutes = this.timeToMinutes(schedule.endTime);
+
+      for (let time = startMinutes; time < endMinutes; time += 30) {
+        const timeStr = this.minutesToTime(time);
+        const isBooked = bookedTimes.some(bt => {
+          const btStart = this.timeToMinutes(bt.start);
+          const btEnd = this.timeToMinutes(bt.end);
+          return time >= btStart && time < btEnd;
+        });
+
+        if (!isBooked) {
+          availableTimes.push(timeStr);
+        }
+      }
+    }
+
+    return { availableTimes };
+  }
+
+  async createWithPayment(data: {
+    serviceId: string;
+    specialistId: string;
+    userId: string;
+    price: number;
+    duration: number;
+    date: string;
+    startTime: string;
+    notes: string;
+  }) {
+    const user = await this.usersService.findOne(data.userId);
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    const specialist = await this.specialistsService.findOne(data.specialistId);
+    if (!specialist) throw new NotFoundException('Especialista no encontrado');
+
+    const endMinutes = this.timeToMinutes(data.startTime) + data.duration;
+    const endTime = this.minutesToTime(endMinutes);
+
+    const appointment = this.appointmentRepository.create({
+      client: user,
+      specialist,
+      date: data.date,
+      startTime: data.startTime,
+      endTime,
+      notes: data.notes,
+      price: data.price,
+      status: AppointmentStatus.CONFIRMED,
+    });
+
+    return await this.appointmentRepository.save(appointment);
+  }
+
+  async confirmAppointment(citaId: string, userId: string) {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id: citaId },
+      relations: ['client'],
+    });
+
+    if (!appointment) throw new NotFoundException('Cita no encontrada');
+    if (appointment.client?.id !== userId) {
+      throw new ForbiddenException('No tienes permiso para confirmar esta cita');
+    }
+
+    appointment.status = AppointmentStatus.CONFIRMED;
+    return await this.appointmentRepository.save(appointment);
   }
 }

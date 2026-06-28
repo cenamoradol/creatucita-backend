@@ -40,6 +40,12 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ nullable: true })
+  resetCode: string;
+
+  @Column({ nullable: true })
+  resetCodeExpires: Date;
+
   @DeleteDateColumn({ nullable: true })
   deletedAt: Date;
 

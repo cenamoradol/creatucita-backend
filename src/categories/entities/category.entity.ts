@@ -11,7 +11,7 @@ export class Category {
   @Column({ nullable: true })
   description: string;
 
-  @OneToMany(() => Subcategory, (subcategory) => subcategory.category)
+  @OneToMany(() => Subcategory, (subcategory) => subcategory.category, { cascade: true })
   subcategories: Subcategory[];
 }
 
@@ -23,6 +23,6 @@ export class Subcategory {
   @Column()
   name: string;
 
-  @ManyToOne(() => Category, (category) => category.subcategories)
+  @ManyToOne(() => Category, (category) => category.subcategories, { onDelete: 'CASCADE' })
   category: Category;
 }

@@ -19,7 +19,7 @@ export class SpecialistsService {
     @InjectRepository(Reminder)
     private readonly reminderRepository: Repository<Reminder>,
     @Inject(forwardRef(() => SchedulesService))
-    private readonly schedulesService: SchedulesService,
+    public readonly schedulesService: SchedulesService,
     @Inject(forwardRef(() => AppointmentsService))
     private readonly appointmentsService: AppointmentsService,
   ) {}
@@ -185,7 +185,7 @@ export class SpecialistsService {
 
   async getAvailability(id: string, dateStr: string) {
     const specialist = await this.findOne(id);
-    const date = new Date(dateStr);
+    const date = new Date(dateStr + 'T00:00:00');
     const dayOfWeek = date.getDay();
 
     const schedules = await this.schedulesService.findByDay(id, dayOfWeek);
@@ -291,5 +291,10 @@ export class SpecialistsService {
     return await this.specialistRepository.find({
       relations: ['user', 'subcategories'],
     });
+  }
+
+  async getOfferedServices(specialistId: string) {
+    const specialist = await this.findOne(specialistId);
+    return specialist.offeredServices || [];
   }
 }

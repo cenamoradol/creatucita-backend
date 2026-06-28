@@ -38,4 +38,19 @@ export class AuthController {
   createAdmin(@Body() body: { email: string; password: string; name: string }) {
     return this.authService.createAdmin(body);
   }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Solicitar código de recuperación de contraseña' })
+  @ApiResponse({ status: 200, description: 'Código enviado al correo' })
+  forgotPassword(@Body() body: { email: string }) {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Restablecer contraseña con código' })
+  @ApiResponse({ status: 200, description: 'Contraseña actualizada' })
+  @ApiResponse({ status: 401, description: 'Código inválido o expirado' })
+  resetPassword(@Body() body: { email: string; code: string; newPassword: string }) {
+    return this.authService.resetPassword(body.email, body.code, body.newPassword);
+  }
 }

@@ -30,4 +30,11 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   locationCity?: string;
+
+  @IsString()
+  @IsOptional()
+  resetCode?: string;
+
+  @IsOptional()
+  resetCodeExpires?: Date;
 }

@@ -89,4 +89,13 @@ export class UsersService {
     await this.userRepository.restore(id);
     return this.findOne(id);
   }
+
+  async updatePassword(id: string, newPassword: string): Promise<void> {
+    const user = await this.findOne(id);
+    if (!user) {
+      throw new ConflictException('Usuario no encontrado');
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.userRepository.update(id, { password: hashedPassword });
+  }
 }

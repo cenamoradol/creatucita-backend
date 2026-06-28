@@ -32,18 +32,29 @@ export class SchedulesService {
     const specialist = await this.specialistsService.findByUser(user.id);
     if (!specialist) throw new NotFoundException('Perfil de especialista no encontrado');
 
+    console.log('=== createBulk received ===');
+    console.log('schedulesDto:', JSON.stringify(schedulesDto, null, 2));
+
     // Eliminar horarios existentes del especialista
     await this.scheduleRepository.delete({ specialist: { id: specialist.id } });
 
-    // Crear los nuevos
-    const newSchedules = schedulesDto.map(dto => 
-      this.scheduleRepository.create({
+    // Crear y guardar los nuevos uno por uno para evitar problemas con TypeORM
+    const savedSchedules: Schedule[] = [];
+    for (const dto of schedulesDto) {
+      console.log('Creating schedule for dayOfWeek:', dto.dayOfWeek, dto);
+      const schedule = this.scheduleRepository.create({
         ...dto,
         specialist,
-      })
-    );
+      });
+      const saved = await this.scheduleRepository.save(schedule);
+      console.log('Saved schedule:', saved);
+      savedSchedules.push(saved);
+    }
 
-    return await this.scheduleRepository.save(newSchedules);
+    console.log('=== All saved schedules ===');
+    console.log(JSON.stringify(savedSchedules, null, 2));
+
+    return savedSchedules;
   }
 
   async findAllBySpecialist(specialistId: string) {

@@ -11,6 +11,8 @@ import { SchedulesModule } from './schedules/schedules.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { OfferedServicesModule } from './offered-services/offered-services.module';
+import { CitasModule } from './citas/citas.module';
+import { SearchModule } from './search/search.module';
 import databaseConfig from './config/database.config';
 
 @Module({
@@ -40,6 +42,8 @@ import databaseConfig from './config/database.config';
     AuthModule,
     MailModule,
     OfferedServicesModule,
+    CitasModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

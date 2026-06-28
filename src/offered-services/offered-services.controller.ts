@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OfferedServicesService } from './offered-services.service';
 import { CreateOfferedServiceDto } from './dto/create-offered-service.dto';
@@ -41,12 +41,36 @@ export class OfferedServicesController {
     return this.offeredServicesService.update(serviceId, req.user, updateDto);
   }
 
-  @Delete('services/:serviceId')
+@Delete('services/:serviceId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SPECIALIST)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Eliminar un servicio ofrecido' })
+  @ApiOperation({ summary: 'Eliminar un servicio oferecido' })
   remove(@Request() req, @Param('serviceId') serviceId: string) {
     return this.offeredServicesService.remove(serviceId, req.user);
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Buscar servicios de especialistas' })
+  search(
+    @Query('q') q?: string,
+    @Query('ciudad') ciudad?: string,
+    @Query('categoria') categoria?: string,
+    @Query('precioMin') precioMin?: string,
+    @Query('precioMax') precioMax?: string,
+    @Query('orden') orden?: string,
+    @Query('userCiudad') userCiudad?: string,
+    @Query('userPais') userPais?: string,
+  ) {
+    return this.offeredServicesService.search({
+      q,
+      ciudad,
+      categoria,
+      precioMin: precioMin ? parseFloat(precioMin) : undefined,
+      precioMax: precioMax ? parseFloat(precioMax) : undefined,
+      orden,
+      userCiudad,
+      userPais,
+    });
   }
 }
