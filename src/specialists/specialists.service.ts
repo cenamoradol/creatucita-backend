@@ -194,7 +194,8 @@ export class SpecialistsService {
     const appointments = await this.appointmentsService.findAllByDate(id, dateStr);
 
     const availableSlots: { start: string; end: string }[] = [];
-    const slotDuration = 30; // 30 minutes
+    // Use specialist's appointment duration (default 30 min)
+    const slotDuration = specialist.appointmentDuration || 30;
 
     for (const schedule of schedules) {
       let currentTime = this.timeToMinutes(schedule.startTime);
@@ -224,7 +225,20 @@ export class SpecialistsService {
     return availableSlots;
   }
 
-  async updateProfile(userId: string, data: { name?: string; phone?: string; bio?: string }) {
+  async updateProfile(
+    userId: string,
+    data: {
+      name?: string;
+      phone?: string;
+      bio?: string;
+      clinicAddress?: string;
+      rtn?: string;
+      locationCountry?: string;
+      locationCity?: string;
+      appointmentDuration?: number;
+      minAdvanceBooking?: number;
+    },
+  ) {
     const specialist = await this.findByUser(userId);
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
 
@@ -239,6 +253,32 @@ export class SpecialistsService {
 
     if (data.bio !== undefined) {
       specialist.bio = data.bio;
+    }
+
+    if (data.clinicAddress !== undefined) {
+      specialist.clinicAddress = data.clinicAddress;
+    }
+
+    if (data.rtn !== undefined) {
+      specialist.rtn = data.rtn;
+    }
+
+    if (data.locationCountry !== undefined) {
+      specialist.user.locationCountry = data.locationCountry;
+      await this.specialistRepository.manager.save(specialist.user);
+    }
+
+    if (data.locationCity !== undefined) {
+      specialist.user.locationCity = data.locationCity;
+      await this.specialistRepository.manager.save(specialist.user);
+    }
+
+    if (data.appointmentDuration !== undefined) {
+      specialist.appointmentDuration = data.appointmentDuration;
+    }
+
+    if (data.minAdvanceBooking !== undefined) {
+      specialist.minAdvanceBooking = data.minAdvanceBooking;
     }
 
     return await this.specialistRepository.save(specialist);

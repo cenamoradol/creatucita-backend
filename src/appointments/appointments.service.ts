@@ -28,19 +28,31 @@ export class AppointmentsService {
     const specialist = await this.specialistsService.findOne(specialistId);
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
 
-    // 2. Prevent past dates
+    // 2. Use specialist's appointment duration (default 30 min)
+    const duration = specialist.appointmentDuration || 30;
+    const minAdvanceHours = specialist.minAdvanceBooking || 4;
+
+    // 3. Prevent past dates
     const appointmentDate = new Date(`${date}T${startTime}`);
     if (appointmentDate < new Date()) {
       throw new BadRequestException('No se pueden agendar citas en el pasado');
     }
 
-    // 3. Verify Schedule availability for that day (using timezone-safe local parsing)
+    // 4. Verify minimum advance booking
+    const hoursUntilAppointment = (appointmentDate.getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntilAppointment < minAdvanceHours) {
+      throw new BadRequestException(
+        `Este especialista requiere al menos ${minAdvanceHours} hora(s) de anticipación para agendar`,
+      );
+    }
+
+    // 5. Verify Schedule availability for that day (using timezone-safe local parsing)
     const [year, month, day] = date.split('-').map(Number);
     const dayOfWeek = new Date(year, month - 1, day).getDay();
     const schedules = await this.schedulesService.findByDay(specialistId, dayOfWeek);
-    
+
     const startMinutes = this.timeToMinutes(startTime);
-    const endMinutes = startMinutes + 30; // 30 min duration
+    const endMinutes = startMinutes + duration;
     const endTime = this.minutesToTime(endMinutes);
 
     const isInSchedule = schedules.some(s => {
@@ -53,7 +65,7 @@ export class AppointmentsService {
       throw new BadRequestException('El especialista no atiende en ese horario');
     }
 
-    // 4. Verify no overlapping appointments
+    // 6. Verify no overlapping appointments
     const existingAppointments = await this.findAllByDate(specialistId, date);
     const isOccupied = existingAppointments.some(app => {
       const appStart = this.timeToMinutes(app.startTime);
@@ -209,6 +221,10 @@ export class AppointmentsService {
       return { availableTimes: [], message: 'El especialista no atiende este día' };
     }
 
+    // Get specialist's appointment duration
+    const specialist = await this.specialistsService.findOne(specialistId);
+    const slotDuration = specialist?.appointmentDuration || 30;
+
     const appointments = await this.findAllActiveByDate(specialistId, date);
     const bookedTimes = appointments.map(app => ({
       start: app.startTime,
@@ -221,12 +237,12 @@ export class AppointmentsService {
       const startMinutes = this.timeToMinutes(schedule.startTime);
       const endMinutes = this.timeToMinutes(schedule.endTime);
 
-      for (let time = startMinutes; time < endMinutes; time += 30) {
+      for (let time = startMinutes; time + slotDuration <= endMinutes; time += slotDuration) {
         const timeStr = this.minutesToTime(time);
         const isBooked = bookedTimes.some(bt => {
           const btStart = this.timeToMinutes(bt.start);
           const btEnd = this.timeToMinutes(bt.end);
-          return time >= btStart && time < btEnd;
+          return time < btEnd && (time + slotDuration) > btStart;
         });
 
         if (!isBooked) {
@@ -254,7 +270,9 @@ export class AppointmentsService {
     const specialist = await this.specialistsService.findOne(data.specialistId);
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
 
-    const endMinutes = this.timeToMinutes(data.startTime) + data.duration;
+    // Use specialist's duration if not specified
+    const slotDuration = data.duration || specialist.appointmentDuration || 30;
+    const endMinutes = this.timeToMinutes(data.startTime) + slotDuration;
     const endTime = this.minutesToTime(endMinutes);
 
     const appointment = this.appointmentRepository.create({

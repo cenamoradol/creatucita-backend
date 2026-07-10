@@ -40,7 +40,20 @@ export class SpecialistsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Actualizar perfil del especialista' })
-  async updateProfile(@Request() req, @Body() body: { name?: string; phone?: string; bio?: string }) {
+  async updateProfile(
+    @Request() req,
+    @Body() body: {
+      name?: string;
+      phone?: string;
+      bio?: string;
+      clinicAddress?: string;
+      rtn?: string;
+      locationCountry?: string;
+      locationCity?: string;
+      appointmentDuration?: number;
+      minAdvanceBooking?: number;
+    },
+  ) {
     return this.specialistsService.updateProfile(req.user.id, body);
   }
 
@@ -196,6 +209,8 @@ export class SpecialistsController {
       especialista_ciudad: specialist.user.locationCity || '',
       especialista_pais: specialist.user.locationCountry || '',
       especialista_biografia: specialist.bio || null,
+      appointmentDuration: specialist.appointmentDuration || 30,
+      minAdvanceBooking: specialist.minAdvanceBooking || 4,
       horarios: schedules
         .filter(s => s.isActive)
         .map(s => ({

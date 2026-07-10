@@ -31,6 +31,12 @@ export class Specialist {
   @Column({ nullable: true })
   clinicAddress: string;
 
+  @Column({ type: 'int', nullable: true, default: 30 })
+  appointmentDuration: number; // in minutes (15, 30, 45, 60)
+
+  @Column({ type: 'int', nullable: true, default: 4 })
+  minAdvanceBooking: number; // in hours (1, 2, 4, 24)
+
   @Column({
     type: 'enum',
     enum: SpecialistStatus,
