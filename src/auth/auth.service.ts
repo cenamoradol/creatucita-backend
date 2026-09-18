@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -30,9 +34,9 @@ export class AuthService {
       ...createUserDto,
       role: UserRole.SPECIALIST,
     });
-    
+
     await this.specialistsService.create(user);
-    
+
     return this.generateToken(user);
   }
 
@@ -81,7 +85,9 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      return { message: 'Si el correo existe, se envió el código de recuperación' };
+      return {
+        message: 'Si el correo existe, se envió el código de recuperación',
+      };
     }
 
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -94,7 +100,9 @@ export class AuthService {
 
     await this.mailService.sendPasswordResetEmail(email, resetCode);
 
-    return { message: 'Si el correo existe, se envió el código de recuperación' };
+    return {
+      message: 'Si el correo existe, se envió el código de recuperación',
+    };
   }
 
   async resetPassword(email: string, code: string, newPassword: string) {
@@ -112,7 +120,10 @@ export class AuthService {
     }
 
     await this.usersService.updatePassword(user.id, newPassword);
-    await this.usersService.update(user.id, { resetCode: undefined, resetCodeExpires: undefined });
+    await this.usersService.update(user.id, {
+      resetCode: undefined,
+      resetCodeExpires: undefined,
+    });
 
     return { message: 'Contraseña actualizada exitosamente' };
   }

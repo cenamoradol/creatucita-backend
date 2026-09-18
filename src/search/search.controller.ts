@@ -5,7 +5,9 @@ import { OfferedServicesService } from '../offered-services/offered-services.ser
 @ApiTags('Búsqueda')
 @Controller('search')
 export class SearchController {
-  constructor(private readonly offeredServicesService: OfferedServicesService) {}
+  constructor(
+    private readonly offeredServicesService: OfferedServicesService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Buscar servicios de especialistas' })

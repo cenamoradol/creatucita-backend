@@ -19,7 +19,10 @@ export class AuthController {
 
   @Post('register-specialist')
   @ApiOperation({ summary: 'Registrar un nuevo especialista' })
-  @ApiResponse({ status: 201, description: 'Especialista registrado exitosamente' })
+  @ApiResponse({
+    status: 201,
+    description: 'Especialista registrado exitosamente',
+  })
   registerSpecialist(@Body() createUserDto: CreateUserDto) {
     return this.authService.registerSpecialist(createUserDto);
   }
@@ -27,7 +30,10 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Iniciar sesión' })
-  @ApiResponse({ status: 200, description: 'Login exitoso, retorna el token JWT' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login exitoso, retorna el token JWT',
+  })
   @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
@@ -50,7 +56,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Restablecer contraseña con código' })
   @ApiResponse({ status: 200, description: 'Contraseña actualizada' })
   @ApiResponse({ status: 401, description: 'Código inválido o expirado' })
-  resetPassword(@Body() body: { email: string; code: string; newPassword: string }) {
-    return this.authService.resetPassword(body.email, body.code, body.newPassword);
+  resetPassword(
+    @Body() body: { email: string; code: string; newPassword: string },
+  ) {
+    return this.authService.resetPassword(
+      body.email,
+      body.code,
+      body.newPassword,
+    );
   }
 }

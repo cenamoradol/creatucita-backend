@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Specialist, SpecialistStatus } from './entities/specialist.entity';
@@ -28,7 +33,9 @@ export class SpecialistsService {
     const specialist = await this.findByUser(userId);
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
 
-    const appointments = await this.appointmentsService.findBySpecialist(specialist.id);
+    const appointments = await this.appointmentsService.findBySpecialist(
+      specialist.id,
+    );
     const notes = await this.noteRepository.find({
       where: { specialist: { id: specialist.id } },
       order: { createdAt: 'DESC' },
@@ -70,7 +77,8 @@ export class SpecialistsService {
 
   async deleteNote(id: string) {
     const result = await this.noteRepository.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Nota no encontrada');
+    if (result.affected === 0)
+      throw new NotFoundException('Nota no encontrada');
     return { success: true };
   }
 
@@ -99,7 +107,8 @@ export class SpecialistsService {
 
   async deleteReminder(id: string) {
     const result = await this.reminderRepository.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Recordatorio no encontrado');
+    if (result.affected === 0)
+      throw new NotFoundException('Recordatorio no encontrado');
     return { success: true };
   }
 
@@ -117,50 +126,69 @@ export class SpecialistsService {
     });
   }
 
-  async apply(user: User, applyDto: ApplySpecialistDto): Promise<Specialist> {
+  async apply(
+    user: User,
+    applyDto: ApplySpecialistDto,
+    dniFile?: string,
+  ): Promise<Specialist> {
     const { subcategoryIds, ...rest } = applyDto;
-    
+
     let specialist = await this.findByUser(user.id);
-    
+
     if (specialist) {
       // Update existing application
       Object.assign(specialist, rest);
+      if (dniFile) specialist.dniFile = dniFile;
       specialist.status = SpecialistStatus.PENDING; // Reset to pending if they update it
     } else {
       // Create new application
       specialist = this.specialistRepository.create({
         ...rest,
+        dniFile,
         user,
         status: SpecialistStatus.PENDING,
       });
     }
 
     if (subcategoryIds) {
-      specialist.subcategories = subcategoryIds.map(id => ({ id } as any));
+      specialist.subcategories = subcategoryIds.map((id) => ({ id }) as any);
     }
 
     return await this.specialistRepository.save(specialist);
   }
 
-  async findAll(filters: { categoryId?: string; subcategoryId?: string; search?: string } = {}) {
-    const query = this.specialistRepository.createQueryBuilder('specialist')
+  async findAll(
+    filters: {
+      categoryId?: string;
+      subcategoryId?: string;
+      search?: string;
+    } = {},
+  ) {
+    const query = this.specialistRepository
+      .createQueryBuilder('specialist')
       .leftJoinAndSelect('specialist.user', 'user')
       .leftJoinAndSelect('specialist.subcategories', 'subcategory')
       .leftJoinAndSelect('subcategory.category', 'category')
-      .where('specialist.status = :status', { status: SpecialistStatus.APPROVED });
+      .where('specialist.status = :status', {
+        status: SpecialistStatus.APPROVED,
+      });
 
     if (filters.categoryId) {
-      query.andWhere('category.id = :categoryId', { categoryId: filters.categoryId });
+      query.andWhere('category.id = :categoryId', {
+        categoryId: filters.categoryId,
+      });
     }
 
     if (filters.subcategoryId) {
-      query.andWhere('subcategory.id = :subcategoryId', { subcategoryId: filters.subcategoryId });
+      query.andWhere('subcategory.id = :subcategoryId', {
+        subcategoryId: filters.subcategoryId,
+      });
     }
 
     if (filters.search) {
       query.andWhere(
         '(user.name ILIKE :search OR specialist.bio ILIKE :search OR category.name ILIKE :search OR subcategory.name ILIKE :search)',
-        { search: `%${filters.search}%` }
+        { search: `%${filters.search}%` },
       );
     }
 
@@ -170,7 +198,13 @@ export class SpecialistsService {
   async findOne(id: string) {
     const specialist = await this.specialistRepository.findOne({
       where: { id },
-      relations: ['user', 'subcategories', 'subcategories.category', 'schedules', 'offeredServices'],
+      relations: [
+        'user',
+        'subcategories',
+        'subcategories.category',
+        'schedules',
+        'offeredServices',
+      ],
     });
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
     return specialist;
@@ -179,7 +213,9 @@ export class SpecialistsService {
   async updateSubcategories(id: string, subcategoryIds: string[]) {
     const specialist = await this.findOne(id);
     // Note: In a real app we'd validate the IDs exist, but for now we trust the client or handle DB error
-    specialist.subcategories = subcategoryIds.map(subId => ({ id: subId } as any));
+    specialist.subcategories = subcategoryIds.map(
+      (subId) => ({ id: subId }) as any,
+    );
     return await this.specialistRepository.save(specialist);
   }
 
@@ -191,7 +227,10 @@ export class SpecialistsService {
     const schedules = await this.schedulesService.findByDay(id, dayOfWeek);
     if (schedules.length === 0) return [];
 
-    const appointments = await this.appointmentsService.findAllByDate(id, dateStr);
+    const appointments = await this.appointmentsService.findAllByDate(
+      id,
+      dateStr,
+    );
 
     const availableSlots: { start: string; end: string }[] = [];
     // Use specialist's appointment duration (default 30 min)
@@ -205,10 +244,10 @@ export class SpecialistsService {
         const slotStart = this.minutesToTime(currentTime);
         const slotEnd = this.minutesToTime(currentTime + slotDuration);
 
-        const isOccupied = appointments.some(app => {
+        const isOccupied = appointments.some((app) => {
           const appStart = this.timeToMinutes(app.startTime);
           const appEnd = this.timeToMinutes(app.endTime);
-          return (currentTime < appEnd && (currentTime + slotDuration) > appStart);
+          return currentTime < appEnd && currentTime + slotDuration > appStart;
         });
 
         if (!isOccupied) {
@@ -303,26 +342,26 @@ export class SpecialistsService {
   }
 
   async approve(id: string): Promise<Specialist> {
-    const specialist = await this.specialistRepository.findOne({ 
+    const specialist = await this.specialistRepository.findOne({
       where: { id },
-      relations: ['user'] 
+      relations: ['user'],
     });
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
-    
+
     specialist.status = SpecialistStatus.APPROVED;
     specialist.user.role = UserRole.SPECIALIST;
-    
+
     await this.specialistRepository.manager.save(specialist.user);
     return await this.specialistRepository.save(specialist);
   }
 
   async reject(id: string): Promise<Specialist> {
-    const specialist = await this.specialistRepository.findOne({ 
+    const specialist = await this.specialistRepository.findOne({
       where: { id },
-      relations: ['user'] 
+      relations: ['user'],
     });
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
-    
+
     specialist.status = SpecialistStatus.REJECTED;
     return await this.specialistRepository.save(specialist);
   }

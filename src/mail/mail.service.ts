@@ -7,7 +7,13 @@ export class MailService {
 
   constructor(private mailerService: MailerService) {}
 
-  async sendAppointmentConfirmation(email: string, clientName: string, specialistName: string, date: string, time: string) {
+  async sendAppointmentConfirmation(
+    email: string,
+    clientName: string,
+    specialistName: string,
+    date: string,
+    time: string,
+  ) {
     try {
       await this.mailerService.sendMail({
         to: email,
@@ -32,7 +38,13 @@ export class MailService {
     }
   }
 
-  async sendNewAppointmentNotification(email: string, specialistName: string, clientName: string, date: string, time: string) {
+  async sendNewAppointmentNotification(
+    email: string,
+    specialistName: string,
+    clientName: string,
+    date: string,
+    time: string,
+  ) {
     try {
       await this.mailerService.sendMail({
         to: email,
@@ -52,7 +64,9 @@ export class MailService {
       });
       this.logger.log(`Notificación de nueva cita enviada a: ${email}`);
     } catch (error) {
-      this.logger.error(`Error enviando notificación a ${email}: ${error.message}`);
+      this.logger.error(
+        `Error enviando notificación a ${email}: ${error.message}`,
+      );
     }
   }
 
@@ -73,7 +87,9 @@ export class MailService {
       });
       this.logger.log(`Email de recuperación enviado a: ${email}`);
     } catch (error) {
-      this.logger.error(`Error enviando email de recuperación a ${email}: ${error.message}`);
+      this.logger.error(
+        `Error enviando email de recuperación a ${email}: ${error.message}`,
+      );
     }
   }
 }

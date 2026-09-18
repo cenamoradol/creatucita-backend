@@ -3,7 +3,10 @@ import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../src/users/entities/user.entity';
 import { Specialist } from '../src/specialists/entities/specialist.entity';
-import { Category, Subcategory } from '../src/categories/entities/category.entity';
+import {
+  Category,
+  Subcategory,
+} from '../src/categories/entities/category.entity';
 import { Schedule } from '../src/schedules/entities/schedule.entity';
 import { OfferedService } from '../src/offered-services/entities/offered-service.entity';
 
@@ -15,7 +18,14 @@ const seedAdmin = async () => {
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'password123',
     database: process.env.DB_NAME || 'creatucita',
-    entities: [User, Specialist, Category, Subcategory, Schedule, OfferedService],
+    entities: [
+      User,
+      Specialist,
+      Category,
+      Subcategory,
+      Schedule,
+      OfferedService,
+    ],
     synchronize: false,
   });
 

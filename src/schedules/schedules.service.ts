@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Schedule } from './entities/schedule.entity';
@@ -19,7 +25,8 @@ export class SchedulesService {
   async create(user: User, createScheduleDto: CreateScheduleDto) {
     // Find the specialist profile associated with the user
     const specialist = await this.specialistsService.findByUser(user.id);
-    if (!specialist) throw new NotFoundException('Perfil de especialista no encontrado');
+    if (!specialist)
+      throw new NotFoundException('Perfil de especialista no encontrado');
 
     const schedule = this.scheduleRepository.create({
       ...createScheduleDto,
@@ -30,7 +37,8 @@ export class SchedulesService {
 
   async createBulk(user: User, schedulesDto: CreateScheduleDto[]) {
     const specialist = await this.specialistsService.findByUser(user.id);
-    if (!specialist) throw new NotFoundException('Perfil de especialista no encontrado');
+    if (!specialist)
+      throw new NotFoundException('Perfil de especialista no encontrado');
 
     console.log('=== createBulk received ===');
     console.log('schedulesDto:', JSON.stringify(schedulesDto, null, 2));
@@ -66,10 +74,10 @@ export class SchedulesService {
 
   async findByDay(specialistId: string, dayOfWeek: number) {
     return await this.scheduleRepository.find({
-      where: { 
-        specialist: { id: specialistId }, 
-        dayOfWeek, 
-        isActive: true 
+      where: {
+        specialist: { id: specialistId },
+        dayOfWeek,
+        isActive: true,
       },
     });
   }
@@ -82,7 +90,9 @@ export class SchedulesService {
 
     if (!schedule) throw new NotFoundException('Horario no encontrado');
     if (schedule.specialist.user.id !== user.id) {
-      throw new ForbiddenException('No tienes permiso para eliminar este horario');
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar este horario',
+      );
     }
 
     return await this.scheduleRepository.remove(schedule);

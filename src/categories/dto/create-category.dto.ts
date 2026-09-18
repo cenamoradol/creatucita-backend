@@ -7,7 +7,10 @@ export class CreateCategoryDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: 'Servicios relacionados con bienestar y medicina', required: false })
+  @ApiProperty({
+    example: 'Servicios relacionados con bienestar y medicina',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   description?: string;

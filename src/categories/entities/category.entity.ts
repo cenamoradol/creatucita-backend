@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToOne,
+} from 'typeorm';
 
 @Entity('categories')
 export class Category {
@@ -11,7 +17,9 @@ export class Category {
   @Column({ nullable: true })
   description: string;
 
-  @OneToMany(() => Subcategory, (subcategory) => subcategory.category, { cascade: true })
+  @OneToMany(() => Subcategory, (subcategory) => subcategory.category, {
+    cascade: true,
+  })
   subcategories: Subcategory[];
 }
 
@@ -23,6 +31,8 @@ export class Subcategory {
   @Column()
   name: string;
 
-  @ManyToOne(() => Category, (category) => category.subcategories, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Category, (category) => category.subcategories, {
+    onDelete: 'CASCADE',
+  })
   category: Category;
 }

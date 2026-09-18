@@ -16,7 +16,9 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { email, password, ...rest } = createUserDto;
 
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictException('El correo electrónico ya está registrado');
     }
@@ -35,35 +37,90 @@ export class UsersService {
   async findAll(): Promise<User[]> {
     return await this.userRepository.find({
       withDeleted: false,
-      select: ['id', 'email', 'name', 'role', 'telephone', 'locationCountry', 'locationCity', 'isActive', 'createdAt', 'updatedAt'],
+      select: [
+        'id',
+        'email',
+        'name',
+        'role',
+        'telephone',
+        'locationCountry',
+        'locationCity',
+        'isActive',
+        'createdAt',
+        'updatedAt',
+      ],
     });
   }
 
   async findAllWithDeleted(): Promise<User[]> {
     return await this.userRepository.find({
       withDeleted: true,
-      select: ['id', 'email', 'name', 'role', 'telephone', 'locationCountry', 'locationCity', 'isActive', 'createdAt', 'updatedAt', 'deletedAt'],
+      select: [
+        'id',
+        'email',
+        'name',
+        'role',
+        'telephone',
+        'locationCountry',
+        'locationCity',
+        'isActive',
+        'createdAt',
+        'updatedAt',
+        'deletedAt',
+      ],
     });
   }
 
   async findAllClients(): Promise<User[]> {
     return await this.userRepository.find({
       where: { role: UserRole.CLIENT },
-      select: ['id', 'email', 'name', 'role', 'telephone', 'locationCountry', 'locationCity', 'isActive', 'createdAt', 'updatedAt'],
+      select: [
+        'id',
+        'email',
+        'name',
+        'role',
+        'telephone',
+        'locationCountry',
+        'locationCity',
+        'isActive',
+        'createdAt',
+        'updatedAt',
+      ],
     });
   }
 
   async findAllSpecialists(): Promise<User[]> {
     return await this.userRepository.find({
       where: { role: UserRole.SPECIALIST },
-      select: ['id', 'email', 'name', 'role', 'telephone', 'locationCountry', 'locationCity', 'isActive', 'createdAt', 'updatedAt'],
+      select: [
+        'id',
+        'email',
+        'name',
+        'role',
+        'telephone',
+        'locationCountry',
+        'locationCity',
+        'isActive',
+        'createdAt',
+        'updatedAt',
+      ],
     });
   }
 
   async findByEmail(email: string): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'name', 'role', 'isActive', 'telephone', 'locationCountry', 'locationCity'], // explicit select password for auth
+      select: [
+        'id',
+        'email',
+        'password',
+        'name',
+        'role',
+        'isActive',
+        'telephone',
+        'locationCountry',
+        'locationCity',
+      ], // explicit select password for auth
     });
   }
 

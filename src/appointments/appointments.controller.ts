@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Patch, UseGuards, Request, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  UseGuards,
+  Request,
+  NotFoundException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -37,7 +47,8 @@ export class AppointmentsController {
   @ApiOperation({ summary: 'Ver citas pendientes (como especialista)' })
   async findSpecialist(@Request() req) {
     const specialist = await this.specialistsService.findByUser(req.user.id);
-    if (!specialist) throw new NotFoundException('Perfil de especialista no encontrado');
+    if (!specialist)
+      throw new NotFoundException('Perfil de especialista no encontrado');
     return this.appointmentsService.findBySpecialist(specialist.id);
   }
 
@@ -47,7 +58,8 @@ export class AppointmentsController {
   @ApiOperation({ summary: 'Crear una cita manual (como especialista)' })
   async createManual(@Request() req, @Body() body: any) {
     const specialist = await this.specialistsService.findByUser(req.user.id);
-    if (!specialist) throw new NotFoundException('Perfil de especialista no encontrado');
+    if (!specialist)
+      throw new NotFoundException('Perfil de especialista no encontrado');
     return this.appointmentsService.createManual(specialist.id, body);
   }
 

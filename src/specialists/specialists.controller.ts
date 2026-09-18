@@ -1,16 +1,45 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Request, NotFoundException, Patch, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+  NotFoundException,
+  Patch,
+  Delete,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiQuery,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { SpecialistsService } from './specialists.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApplySpecialistDto } from './dto/apply-specialist.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { StorageService } from '../storage/storage.service';
 
 @ApiTags('Especialistas')
 @Controller('specialists')
 export class SpecialistsController {
-  constructor(private readonly specialistsService: SpecialistsService) {}
+  constructor(
+    private readonly specialistsService: SpecialistsService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
@@ -23,7 +52,9 @@ export class SpecialistsController {
   @Get('my-application')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Obtener el estado de mi solicitud de especialista' })
+  @ApiOperation({
+    summary: 'Obtener el estado de mi solicitud de especialista',
+  })
   async getMyApplication(@Request() req) {
     return this.specialistsService.findByUser(req.user.id);
   }
@@ -42,7 +73,8 @@ export class SpecialistsController {
   @ApiOperation({ summary: 'Actualizar perfil del especialista' })
   async updateProfile(
     @Request() req,
-    @Body() body: {
+    @Body()
+    body: {
       name?: string;
       phone?: string;
       bio?: string;
@@ -139,7 +171,11 @@ export class SpecialistsController {
     @Query('subcategoryId') subcategoryId?: string,
     @Query('search') search?: string,
   ) {
-    return this.specialistsService.findAll({ categoryId, subcategoryId, search });
+    return this.specialistsService.findAll({
+      categoryId,
+      subcategoryId,
+      search,
+    });
   }
 
   @Post('my-specialties')
@@ -147,20 +183,73 @@ export class SpecialistsController {
   @Roles(UserRole.SPECIALIST)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Asociar subcategorías al perfil del especialista' })
-  async updateMySpecialties(@Request() req, @Body('subcategoryIds') subcategoryIds: string[]) {
+  async updateMySpecialties(
+    @Request() req,
+    @Body('subcategoryIds') subcategoryIds: string[],
+  ) {
     const specialist = await this.specialistsService.findByUser(req.user.id);
     if (!specialist) {
       throw new NotFoundException('Perfil de especialista no encontrado');
     }
-    return this.specialistsService.updateSubcategories(specialist.id, subcategoryIds);
+    return this.specialistsService.updateSubcategories(
+      specialist.id,
+      subcategoryIds,
+    );
   }
 
   @Post('apply')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Aplicar como especialista (RTN, Dirección, etc.)' })
-  async apply(@Request() req, @Body() applyDto: ApplySpecialistDto) {
-    return this.specialistsService.apply(req.user, applyDto);
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Aplicar como especialista (RTN, DNI, Dirección, etc.)',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        rtn: { type: 'string' },
+        dni: { type: 'string' },
+        clinicAddress: { type: 'string' },
+        bio: { type: 'string' },
+        phone: { type: 'string' },
+        subcategoryIds: { type: 'string', example: 'uuid1,uuid2' },
+        dniFile: { type: 'string', format: 'binary' },
+      },
+      required: ['rtn', 'dni', 'clinicAddress', 'subcategoryIds'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('dniFile', {
+      storage: memoryStorage(),
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpg|jpeg|png|pdf|webp)$/i;
+        if (!allowed.test(extname(file.originalname))) {
+          return cb(
+            new BadRequestException('Solo se permiten imágenes o PDF'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async apply(
+    @Request() req,
+    @Body() applyDto: ApplySpecialistDto,
+    @UploadedFile() dniFile?: any,
+  ) {
+    let dniUrl: string | undefined;
+    if (dniFile) {
+      dniUrl = await this.storageService.upload(
+        'dni',
+        dniFile.buffer,
+        dniFile.mimetype,
+        dniFile.originalname,
+      );
+    }
+    return this.specialistsService.apply(req.user, applyDto, dniUrl);
   }
 
   @Get(':id')
@@ -170,12 +259,15 @@ export class SpecialistsController {
   }
 
   @Get(':id/availability')
-  @ApiOperation({ summary: 'Consultar disponibilidad de un especialista para una fecha' })
-  @ApiQuery({ name: 'date', example: '2026-05-20', description: 'Fecha en formato YYYY-MM-DD' })
-  getAvailability(
-    @Param('id') id: string,
-    @Query('date') date: string,
-  ) {
+  @ApiOperation({
+    summary: 'Consultar disponibilidad de un especialista para una fecha',
+  })
+  @ApiQuery({
+    name: 'date',
+    example: '2026-05-20',
+    description: 'Fecha en formato YYYY-MM-DD',
+  })
+  getAvailability(@Param('id') id: string, @Query('date') date: string) {
     return this.specialistsService.getAvailability(id, date);
   }
 
@@ -184,11 +276,20 @@ export class SpecialistsController {
   async getSchedule(@Param('id') id: string) {
     const specialist = await this.specialistsService.findOne(id);
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
-    const schedules = await this.specialistsService.schedulesService.findAllBySpecialist(id);
-    const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const schedules =
+      await this.specialistsService.schedulesService.findAllBySpecialist(id);
+    const dayNames = [
+      'domingo',
+      'lunes',
+      'martes',
+      'miércoles',
+      'jueves',
+      'viernes',
+      'sábado',
+    ];
     return schedules
-      .filter(s => s.isActive)
-      .map(s => ({
+      .filter((s) => s.isActive)
+      .map((s) => ({
         day: dayNames[s.dayOfWeek],
         hour_start: s.startTime,
         hour_end: s.endTime,
@@ -200,8 +301,17 @@ export class SpecialistsController {
   async getBookingInfo(@Param('id') id: string) {
     const specialist = await this.specialistsService.findOne(id);
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
-    const schedules = await this.specialistsService.schedulesService.findAllBySpecialist(id);
-    const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const schedules =
+      await this.specialistsService.schedulesService.findAllBySpecialist(id);
+    const dayNames = [
+      'domingo',
+      'lunes',
+      'martes',
+      'miércoles',
+      'jueves',
+      'viernes',
+      'sábado',
+    ];
     const services = await this.specialistsService.getOfferedServices(id);
     return {
       especialistaid: specialist.id,
@@ -212,13 +322,13 @@ export class SpecialistsController {
       appointmentDuration: specialist.appointmentDuration || 30,
       minAdvanceBooking: specialist.minAdvanceBooking || 4,
       horarios: schedules
-        .filter(s => s.isActive)
-        .map(s => ({
+        .filter((s) => s.isActive)
+        .map((s) => ({
           day: dayNames[s.dayOfWeek],
           hour_start: s.startTime,
           hour_end: s.endTime,
         })),
-      servicios: services.map(s => ({
+      servicios: services.map((s) => ({
         id: s.id,
         specialty: s.specialty,
         specialties: s.specialties,

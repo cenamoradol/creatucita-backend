@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsString, IsUUID, Matches, IsDateString, IsOptional } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsUUID,
+  Matches,
+  IsDateString,
+  IsOptional,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAppointmentDto {
@@ -7,12 +14,18 @@ export class CreateAppointmentDto {
   @IsNotEmpty()
   specialistId: string;
 
-  @ApiProperty({ example: '2026-05-20', description: 'Fecha de la cita (YYYY-MM-DD)' })
+  @ApiProperty({
+    example: '2026-05-20',
+    description: 'Fecha de la cita (YYYY-MM-DD)',
+  })
   @IsDateString()
   @IsNotEmpty()
   date: string;
 
-  @ApiProperty({ example: '10:00:00', description: 'Hora de inicio (HH:mm:ss)' })
+  @ApiProperty({
+    example: '10:00:00',
+    description: 'Hora de inicio (HH:mm:ss)',
+  })
   @IsString()
   @IsNotEmpty()
   @Matches(/^([01]\d|2[0-3]):?([0-5]\d):?([0-5]\d)$/)

@@ -1,4 +1,12 @@
-import { Injectable, ConflictException, BadRequestException, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, LessThan, And } from 'typeorm';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
@@ -22,7 +30,8 @@ export class AppointmentsService {
   ) {}
 
   async create(user: User, createAppointmentDto: CreateAppointmentDto) {
-    const { specialistId, date, startTime, notes, serviceId, price } = createAppointmentDto;
+    const { specialistId, date, startTime, notes, serviceId, price } =
+      createAppointmentDto;
 
     // 1. Verify Specialist
     const specialist = await this.specialistsService.findOne(specialistId);
@@ -39,7 +48,8 @@ export class AppointmentsService {
     }
 
     // 4. Verify minimum advance booking
-    const hoursUntilAppointment = (appointmentDate.getTime() - Date.now()) / (1000 * 60 * 60);
+    const hoursUntilAppointment =
+      (appointmentDate.getTime() - Date.now()) / (1000 * 60 * 60);
     if (hoursUntilAppointment < minAdvanceHours) {
       throw new BadRequestException(
         `Este especialista requiere al menos ${minAdvanceHours} hora(s) de anticipación para agendar`,
@@ -49,28 +59,33 @@ export class AppointmentsService {
     // 5. Verify Schedule availability for that day (using timezone-safe local parsing)
     const [year, month, day] = date.split('-').map(Number);
     const dayOfWeek = new Date(year, month - 1, day).getDay();
-    const schedules = await this.schedulesService.findByDay(specialistId, dayOfWeek);
+    const schedules = await this.schedulesService.findByDay(
+      specialistId,
+      dayOfWeek,
+    );
 
     const startMinutes = this.timeToMinutes(startTime);
     const endMinutes = startMinutes + duration;
     const endTime = this.minutesToTime(endMinutes);
 
-    const isInSchedule = schedules.some(s => {
+    const isInSchedule = schedules.some((s) => {
       const sStart = this.timeToMinutes(s.startTime);
       const sEnd = this.timeToMinutes(s.endTime);
       return startMinutes >= sStart && endMinutes <= sEnd;
     });
 
     if (!isInSchedule) {
-      throw new BadRequestException('El especialista no atiende en ese horario');
+      throw new BadRequestException(
+        'El especialista no atiende en ese horario',
+      );
     }
 
     // 6. Verify no overlapping appointments
     const existingAppointments = await this.findAllByDate(specialistId, date);
-    const isOccupied = existingAppointments.some(app => {
+    const isOccupied = existingAppointments.some((app) => {
       const appStart = this.timeToMinutes(app.startTime);
       const appEnd = this.timeToMinutes(app.endTime);
-      return (startMinutes < appEnd && endMinutes > appStart);
+      return startMinutes < appEnd && endMinutes > appStart;
     });
 
     if (isOccupied) {
@@ -82,9 +97,12 @@ export class AppointmentsService {
     let servicePrice = price || 0;
 
     if (serviceId && specialist.offeredServices) {
-      const offeredSvc = specialist.offeredServices.find(s => s.id === serviceId);
+      const offeredSvc = specialist.offeredServices.find(
+        (s) => s.id === serviceId,
+      );
       if (offeredSvc) {
-        serviceName = offeredSvc.specialties || offeredSvc.specialty || 'Consulta';
+        serviceName =
+          offeredSvc.specialties || offeredSvc.specialty || 'Consulta';
         servicePrice = parseFloat(offeredSvc.price as any);
       }
     }
@@ -130,21 +148,24 @@ export class AppointmentsService {
 
   async findAllByDate(specialistId: string, date: string) {
     return await this.appointmentRepository.find({
-      where: { 
+      where: {
         specialist: { id: specialistId },
         date,
-        status: And(MoreThan(AppointmentStatus.CANCELLED), LessThan(AppointmentStatus.COMPLETED)) as any // simplify
+        status: And(
+          MoreThan(AppointmentStatus.CANCELLED),
+          LessThan(AppointmentStatus.COMPLETED),
+        ), // simplify
       },
     });
   }
 
   // Override to get all for availability check (excluding cancelled)
   async findAllActiveByDate(specialistId: string, date: string) {
-     return await this.appointmentRepository.find({
-      where: { 
+    return await this.appointmentRepository.find({
+      where: {
         specialist: { id: specialistId },
         date,
-        status: And(MoreThan(AppointmentStatus.CANCELLED)) as any
+        status: And(MoreThan(AppointmentStatus.CANCELLED)),
       },
     });
   }
@@ -167,7 +188,7 @@ export class AppointmentsService {
 
   async createManual(specialistId: string, data: any) {
     const { nombre, email, telefono, fecha, hora, servicio, notas } = data;
-    
+
     // 1. Verify Specialist
     const specialist = await this.specialistsService.findOne(specialistId);
     if (!specialist) throw new NotFoundException('Especialista no encontrado');
@@ -195,7 +216,9 @@ export class AppointmentsService {
   }
 
   async updateStatus(id: string, status: AppointmentStatus) {
-    const appointment = await this.appointmentRepository.findOne({ where: { id } });
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id },
+    });
     if (!appointment) throw new NotFoundException('Cita no encontrada');
     appointment.status = status;
     return await this.appointmentRepository.save(appointment);
@@ -215,10 +238,16 @@ export class AppointmentsService {
   async getAvailableTimes(specialistId: string, date: string) {
     const [year, month, day] = date.split('-').map(Number);
     const dayOfWeek = new Date(year, month - 1, day).getDay();
-    const schedules = await this.schedulesService.findByDay(specialistId, dayOfWeek);
+    const schedules = await this.schedulesService.findByDay(
+      specialistId,
+      dayOfWeek,
+    );
 
     if (!schedules || schedules.length === 0) {
-      return { availableTimes: [], message: 'El especialista no atiende este día' };
+      return {
+        availableTimes: [],
+        message: 'El especialista no atiende este día',
+      };
     }
 
     // Get specialist's appointment duration
@@ -226,7 +255,7 @@ export class AppointmentsService {
     const slotDuration = specialist?.appointmentDuration || 30;
 
     const appointments = await this.findAllActiveByDate(specialistId, date);
-    const bookedTimes = appointments.map(app => ({
+    const bookedTimes = appointments.map((app) => ({
       start: app.startTime,
       end: app.endTime,
     }));
@@ -237,12 +266,16 @@ export class AppointmentsService {
       const startMinutes = this.timeToMinutes(schedule.startTime);
       const endMinutes = this.timeToMinutes(schedule.endTime);
 
-      for (let time = startMinutes; time + slotDuration <= endMinutes; time += slotDuration) {
+      for (
+        let time = startMinutes;
+        time + slotDuration <= endMinutes;
+        time += slotDuration
+      ) {
         const timeStr = this.minutesToTime(time);
-        const isBooked = bookedTimes.some(bt => {
+        const isBooked = bookedTimes.some((bt) => {
           const btStart = this.timeToMinutes(bt.start);
           const btEnd = this.timeToMinutes(bt.end);
-          return time < btEnd && (time + slotDuration) > btStart;
+          return time < btEnd && time + slotDuration > btStart;
         });
 
         if (!isBooked) {
@@ -297,7 +330,9 @@ export class AppointmentsService {
 
     if (!appointment) throw new NotFoundException('Cita no encontrada');
     if (appointment.client?.id !== userId) {
-      throw new ForbiddenException('No tienes permiso para confirmar esta cita');
+      throw new ForbiddenException(
+        'No tienes permiso para confirmar esta cita',
+      );
     }
 
     appointment.status = AppointmentStatus.CONFIRMED;

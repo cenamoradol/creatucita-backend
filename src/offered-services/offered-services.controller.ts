@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Request, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
+  Request,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OfferedServicesService } from './offered-services.service';
 import { CreateOfferedServiceDto } from './dto/create-offered-service.dto';
@@ -11,7 +22,9 @@ import { UserRole } from '../users/entities/user.entity';
 @ApiTags('Servicios Ofrecidos (Cobros)')
 @Controller('specialists')
 export class OfferedServicesController {
-  constructor(private readonly offeredServicesService: OfferedServicesService) {}
+  constructor(
+    private readonly offeredServicesService: OfferedServicesService,
+  ) {}
 
   @Post('services')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,7 +36,9 @@ export class OfferedServicesController {
   }
 
   @Get(':id/services')
-  @ApiOperation({ summary: 'Obtener los servicios ofrecidos por un especialista' })
+  @ApiOperation({
+    summary: 'Obtener los servicios ofrecidos por un especialista',
+  })
   findAllBySpecialist(@Param('id') id: string) {
     return this.offeredServicesService.findAllBySpecialist(id);
   }
@@ -41,7 +56,7 @@ export class OfferedServicesController {
     return this.offeredServicesService.update(serviceId, req.user, updateDto);
   }
 
-@Delete('services/:serviceId')
+  @Delete('services/:serviceId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SPECIALIST)
   @ApiBearerAuth()

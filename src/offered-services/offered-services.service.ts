@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OfferedService } from './entities/offered-service.entity';
@@ -18,7 +24,8 @@ export class OfferedServicesService {
 
   async create(user: User, createDto: CreateOfferedServiceDto) {
     const specialist = await this.specialistsService.findByUser(user.id);
-    if (!specialist) throw new NotFoundException('Perfil de especialista no encontrado');
+    if (!specialist)
+      throw new NotFoundException('Perfil de especialista no encontrado');
 
     const service = this.offeredServiceRepository.create({
       ...createDto,
@@ -67,7 +74,9 @@ export class OfferedServicesService {
 
     if (!service) throw new NotFoundException('Servicio no encontrado');
     if (service.specialist.user.id !== user.id) {
-      throw new ForbiddenException('No tienes permiso para editar este servicio');
+      throw new ForbiddenException(
+        'No tienes permiso para editar este servicio',
+      );
     }
 
     Object.assign(service, updateDto);
@@ -82,7 +91,9 @@ export class OfferedServicesService {
 
     if (!service) throw new NotFoundException('Servicio no encontrado');
     if (service.specialist.user.id !== user.id) {
-      throw new ForbiddenException('No tienes permiso para eliminar este servicio');
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar este servicio',
+      );
     }
 
     return await this.offeredServiceRepository.remove(service);
@@ -104,23 +115,34 @@ export class OfferedServicesService {
       .innerJoinAndSelect('specialist.user', 'user');
 
     if (params.q) {
-      qb.andWhere('(service.specialty ILIKE :q OR service.specialties ILIKE :q)', { q: `%${params.q}%` });
+      qb.andWhere(
+        '(service.specialty ILIKE :q OR service.specialties ILIKE :q)',
+        { q: `%${params.q}%` },
+      );
     }
 
     if (params.categoria) {
-      qb.andWhere('service.specialty ILIKE :categoria', { categoria: `%${params.categoria}%` });
+      qb.andWhere('service.specialty ILIKE :categoria', {
+        categoria: `%${params.categoria}%`,
+      });
     }
 
     if (params.ciudad) {
-      qb.andWhere('user.locationCity ILIKE :ciudad', { ciudad: `%${params.ciudad}%` });
+      qb.andWhere('user.locationCity ILIKE :ciudad', {
+        ciudad: `%${params.ciudad}%`,
+      });
     }
 
     if (params.precioMin) {
-      qb.andWhere('service.price >= :precioMin', { precioMin: params.precioMin });
+      qb.andWhere('service.price >= :precioMin', {
+        precioMin: params.precioMin,
+      });
     }
 
     if (params.precioMax) {
-      qb.andWhere('service.price <= :precioMax', { precioMax: params.precioMax });
+      qb.andWhere('service.price <= :precioMax', {
+        precioMax: params.precioMax,
+      });
     }
 
     if (params.orden === 'price_asc') {

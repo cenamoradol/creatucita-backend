@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Put, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AppointmentsService } from '../appointments/appointments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -47,18 +55,21 @@ export class CitasController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Agendar cita con pago' })
-  agendarConPago(@Body() body: {
-    idservicio: number;
-    especialistaid: number;
-    userid: number;
-    price: number;
-    duration: number;
-    date: string;
-    hour: string;
-    motivo?: string;
-    notas_adicionales?: string;
-    payment_intent_id: string;
-  }) {
+  agendarConPago(
+    @Body()
+    body: {
+      idservicio: number;
+      especialistaid: number;
+      userid: number;
+      price: number;
+      duration: number;
+      date: string;
+      hour: string;
+      motivo?: string;
+      notas_adicionales?: string;
+      payment_intent_id: string;
+    },
+  ) {
     return this.appointmentsService.createWithPayment({
       serviceId: body.idservicio.toString(),
       specialistId: body.especialistaid.toString(),
@@ -73,13 +84,18 @@ export class CitasController {
 
   @Put('cliente/:citaId/confirmar')
   @ApiOperation({ summary: 'Confirmar cita como cliente' })
-  confirmarCita(@Param('citaId') citaId: string, @Body() body: { userid: number }) {
-    return this.appointmentsService.confirmAppointment(citaId, body.userid.toString());
+  confirmarCita(
+    @Param('citaId') citaId: string,
+    @Body() body: { userid: number },
+  ) {
+    return this.appointmentsService.confirmAppointment(
+      citaId,
+      body.userid.toString(),
+    );
   }
 
   @Put(':citaId/cancelar')
-  @ApiOperation({ summary: 'Cancelar cita' }
-)
+  @ApiOperation({ summary: 'Cancelar cita' })
   cancelarCita(@Param('citaId') citaId: string) {
     return this.appointmentsService.updateStatus(citaId, 'cancelled' as any);
   }

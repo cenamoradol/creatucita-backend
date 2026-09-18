@@ -14,6 +14,7 @@ import { OfferedServicesModule } from './offered-services/offered-services.modul
 import { CitasModule } from './citas/citas.module';
 import { SearchModule } from './search/search.module';
 import databaseConfig from './config/database.config';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -23,17 +24,27 @@ import databaseConfig from './config/database.config';
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('database.host'),
-        port: configService.get<number>('database.port'),
-        username: configService.get<string>('database.username'),
-        password: configService.get<string>('database.password'),
-        database: configService.get<string>('database.database'),
-        autoLoadEntities: true,
-        synchronize: true, // Only for development
-      }),
+      useFactory: (configService: ConfigService) => {
+        const url = process.env.DATABASE_URL;
+        const base = {
+          type: 'postgres' as const,
+          autoLoadEntities: true,
+          synchronize: true, // Only for development
+        };
+        if (url) {
+          return { ...base, url };
+        }
+        return {
+          ...base,
+          host: configService.get<string>('database.host'),
+          port: configService.get<number>('database.port'),
+          username: configService.get<string>('database.username'),
+          password: configService.get<string>('database.password'),
+          database: configService.get<string>('database.database'),
+        };
+      },
     }),
+    StorageModule,
     UsersModule,
     SpecialistsModule,
     CategoriesModule,

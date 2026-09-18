@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -25,7 +33,9 @@ export class CategoriesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar todas las categorías con sus subcategorías' })
+  @ApiOperation({
+    summary: 'Listar todas las categorías con sus subcategorías',
+  })
   findAll() {
     return this.categoriesService.findAll();
   }
@@ -38,7 +48,10 @@ export class CategoriesController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar una categoría' })
-  updateCategory(@Param('id') id: string, @Body() data: { name?: string; description?: string; image?: string }) {
+  updateCategory(
+    @Param('id') id: string,
+    @Body() data: { name?: string; description?: string; image?: string },
+  ) {
     return this.categoriesService.updateCategory(id, data);
   }
 
@@ -50,7 +63,10 @@ export class CategoriesController {
 
   @Patch('subcategories/:id')
   @ApiOperation({ summary: 'Actualizar una subcategoría' })
-  updateSubcategory(@Param('id') id: string, @Body() data: { name?: string; description?: string }) {
+  updateSubcategory(
+    @Param('id') id: string,
+    @Body() data: { name?: string; description?: string },
+  ) {
     return this.categoriesService.updateSubcategory(id, data);
   }
 

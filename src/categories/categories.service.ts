@@ -19,8 +19,13 @@ export class CategoriesService {
     return await this.categoryRepository.save(category);
   }
 
-  async createSubcategory(categoryId: string, createSubcategoryDto: CreateSubcategoryDto) {
-    const category = await this.categoryRepository.findOne({ where: { id: categoryId } });
+  async createSubcategory(
+    categoryId: string,
+    createSubcategoryDto: CreateSubcategoryDto,
+  ) {
+    const category = await this.categoryRepository.findOne({
+      where: { id: categoryId },
+    });
     if (!category) throw new NotFoundException('Categoría no encontrada');
 
     const subcategory = this.subcategoryRepository.create({
@@ -45,10 +50,13 @@ export class CategoriesService {
     return category;
   }
 
-  async updateCategory(id: string, data: { name?: string; description?: string; image?: string }) {
+  async updateCategory(
+    id: string,
+    data: { name?: string; description?: string; image?: string },
+  ) {
     const category = await this.categoryRepository.findOne({ where: { id } });
     if (!category) throw new NotFoundException('Categoría no encontrada');
-    
+
     Object.assign(category, data);
     return await this.categoryRepository.save(category);
   }
@@ -56,23 +64,30 @@ export class CategoriesService {
   async deleteCategory(id: string) {
     const category = await this.categoryRepository.findOne({ where: { id } });
     if (!category) throw new NotFoundException('Categoría no encontrada');
-    
+
     await this.categoryRepository.delete(id);
     return { message: 'Categoría eliminada' };
   }
 
-  async updateSubcategory(id: string, data: { name?: string; description?: string }) {
-    const subcategory = await this.subcategoryRepository.findOne({ where: { id } });
+  async updateSubcategory(
+    id: string,
+    data: { name?: string; description?: string },
+  ) {
+    const subcategory = await this.subcategoryRepository.findOne({
+      where: { id },
+    });
     if (!subcategory) throw new NotFoundException('Subcategoría no encontrada');
-    
+
     Object.assign(subcategory, data);
     return await this.subcategoryRepository.save(subcategory);
   }
 
   async deleteSubcategory(id: string) {
-    const subcategory = await this.subcategoryRepository.findOne({ where: { id } });
+    const subcategory = await this.subcategoryRepository.findOne({
+      where: { id },
+    });
     if (!subcategory) throw new NotFoundException('Subcategoría no encontrada');
-    
+
     await this.subcategoryRepository.delete(id);
     return { message: 'Subcategoría eliminada' };
   }

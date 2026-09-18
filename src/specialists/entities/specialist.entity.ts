@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+  OneToMany,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Subcategory } from '../../categories/entities/category.entity';
 import { Schedule } from '../../schedules/entities/schedule.entity';
@@ -29,6 +38,12 @@ export class Specialist {
   rtn: string;
 
   @Column({ nullable: true })
+  dni: string;
+
+  @Column({ nullable: true })
+  dniFile: string;
+
+  @Column({ nullable: true })
   clinicAddress: string;
 
   @Column({ type: 'int', nullable: true, default: 30 })
@@ -54,6 +69,9 @@ export class Specialist {
   @OneToMany(() => Schedule, (schedule) => schedule.specialist)
   schedules: Schedule[];
 
-  @OneToMany(() => OfferedService, (offeredService) => offeredService.specialist)
+  @OneToMany(
+    () => OfferedService,
+    (offeredService) => offeredService.specialist,
+  )
   offeredServices: OfferedService[];
 }

@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SchedulesService } from './schedules.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
@@ -18,7 +27,9 @@ export class SchedulesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SPECIALIST)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Definir un horario de atención (Solo Especialistas)' })
+  @ApiOperation({
+    summary: 'Definir un horario de atención (Solo Especialistas)',
+  })
   create(@Request() req, @Body() createScheduleDto: CreateScheduleDto) {
     return this.schedulesService.create(req.user, createScheduleDto);
   }
@@ -27,13 +38,18 @@ export class SchedulesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SPECIALIST)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Definir múltiples horarios de atención (Sobreescribe los anteriores)' })
+  @ApiOperation({
+    summary:
+      'Definir múltiples horarios de atención (Sobreescribe los anteriores)',
+  })
   createBulk(@Request() req, @Body() bulkCreateDto: BulkCreateScheduleDto) {
     return this.schedulesService.createBulk(req.user, bulkCreateDto.schedules);
   }
 
   @Get('specialist/:id')
-  @ApiOperation({ summary: 'Obtener los horarios de un especialista por su ID de perfil' })
+  @ApiOperation({
+    summary: 'Obtener los horarios de un especialista por su ID de perfil',
+  })
   findAllBySpecialist(@Param('id') id: string) {
     return this.schedulesService.findAllBySpecialist(id);
   }
