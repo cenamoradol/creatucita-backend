@@ -87,7 +87,7 @@ export class StorageService {
   async deleteByUrl(url: string): Promise<void> {
     if (!url) return;
     this.ensureReady();
-    const key = url.split('/').slice(-2).join('/');
+    const key = new URL(url).pathname.replace(/^\/+/, '');
     if (!key) return;
     try {
       await this.client!.send(

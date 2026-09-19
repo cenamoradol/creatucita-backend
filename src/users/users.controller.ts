@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -19,14 +20,14 @@ import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiOperation } from '@nes
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { StorageService } from '../storage/storage.service';
 
 @ApiTags('Usuarios')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
   constructor(
     private readonly usersService: UsersService,
     private readonly storageService: StorageService,
@@ -62,11 +63,6 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
-  }
-
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
@@ -77,15 +73,33 @@ export class UsersController {
     return this.usersService.restore(id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Patch('me')
   @ApiOperation({ summary: 'Actualizar mi perfil (sin email)' })
-  updateMe(
+  async updateMe(
     @Request() req,
-    @Body() body: { name?: string; telephone?: string; locationCountry?: string; locationCity?: string },
+    @Body() body: UpdateProfileDto,
   ) {
-    return this.usersService.update(req.user.id, body);
+    const id = req.user?.id;
+    if (!id) throw new BadRequestException('Token inválido');
+    const updated = await this.usersService.update(id, {
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.telephone !== undefined && { telephone: body.telephone }),
+      ...(body.locationCountry !== undefined && { locationCountry: body.locationCountry }),
+      ...(body.locationCity !== undefined && { locationCity: body.locationCity }),
+    });
+    const { password, ...safe } = updated;
+    return safe;
   }
 
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post('me/avatar')
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Subir foto de perfil' })
@@ -102,13 +116,32 @@ export class UsersController {
     limits: { fileSize: 3 * 1024 * 1024 },
   }))
   async uploadAvatar(@Request() req, @UploadedFile() avatar: any) {
+    const id = req.user?.id;
+    if (!id) throw new BadRequestException('Token inválido');
     if (!avatar) throw new BadRequestException('Falta el archivo avatar');
+
+    const current = await this.usersService.findOne(id);
+    const oldUrl = current?.profilePicture;
+
     const url = await this.storageService.upload(
-      `avatars/${req.user.id}`,
+      `avatars/${id}`,
       avatar.buffer,
       avatar.mimetype,
       avatar.originalname,
     );
-    return this.usersService.update(req.user.id, { profilePicture: url });
+    const updated = await this.usersService.update(id, { profilePicture: url });
+
+    if (oldUrl && oldUrl !== url) {
+      try {
+        await this.storageService.deleteByUrl(oldUrl);
+      } catch (err) {
+        this.logger.warn(
+          `No se pudo eliminar avatar anterior ${oldUrl}: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    const { password, ...safe } = updated;
+    return safe;
   }
 }
