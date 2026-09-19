@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -36,6 +37,7 @@ import { StorageService } from '../storage/storage.service';
 @ApiTags('Especialistas')
 @Controller('specialists')
 export class SpecialistsController {
+  private readonly logger = new Logger(SpecialistsController.name);
   constructor(
     private readonly specialistsService: SpecialistsService,
     private readonly storageService: StorageService,
@@ -87,6 +89,61 @@ export class SpecialistsController {
     },
   ) {
     return this.specialistsService.updateProfile(req.user.id, body);
+  }
+
+  @Post('me/avatar')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Subir foto de perfil del especialista' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { avatar: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: memoryStorage(),
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpg|jpeg|png|webp|gif)$/i;
+        if (!allowed.test(extname(file.originalname))) {
+          return cb(
+            new BadRequestException('Solo se permiten imágenes (jpg, png, webp, gif)'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+      limits: { fileSize: 3 * 1024 * 1024 },
+    }),
+  )
+  async uploadAvatar(@Request() req, @UploadedFile() avatar: any) {
+    const specialist = await this.specialistsService.findByUser(req.user.id);
+    if (!specialist) throw new NotFoundException('Especialista no encontrado');
+    if (!avatar) throw new BadRequestException('Falta el archivo avatar');
+
+    const oldUrl = specialist.profilePicture;
+
+    const url = await this.storageService.upload(
+      `avatars/specialists/${specialist.id}`,
+      avatar.buffer,
+      avatar.mimetype,
+      avatar.originalname,
+    );
+    const updated = await this.specialistsService.setProfilePicture(specialist.id, url);
+
+    if (oldUrl && oldUrl !== url) {
+      try {
+        await this.storageService.deleteByUrl(oldUrl);
+      } catch (err) {
+        this.logger.warn(
+          `No se pudo eliminar avatar anterior ${oldUrl}: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    return updated;
   }
 
   @Get('notes')

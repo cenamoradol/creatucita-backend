@@ -323,6 +323,13 @@ export class SpecialistsService {
     return await this.specialistRepository.save(specialist);
   }
 
+  async setProfilePicture(specialistId: string, url: string): Promise<Specialist> {
+    const specialist = await this.findOne(specialistId);
+    if (!specialist) throw new NotFoundException('Especialista no encontrado');
+    specialist.profilePicture = url;
+    return await this.specialistRepository.save(specialist);
+  }
+
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
