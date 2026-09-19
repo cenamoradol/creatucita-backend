@@ -8,7 +8,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, LessThan, And } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { User } from '../users/entities/user.entity';
@@ -151,10 +151,7 @@ export class AppointmentsService {
       where: {
         specialist: { id: specialistId },
         date,
-        status: And(
-          MoreThan(AppointmentStatus.CANCELLED),
-          LessThan(AppointmentStatus.COMPLETED),
-        ), // simplify
+        status: Not(AppointmentStatus.CANCELLED),
       },
     });
   }
@@ -165,7 +162,7 @@ export class AppointmentsService {
       where: {
         specialist: { id: specialistId },
         date,
-        status: And(MoreThan(AppointmentStatus.CANCELLED)),
+        status: Not(AppointmentStatus.CANCELLED),
       },
     });
   }

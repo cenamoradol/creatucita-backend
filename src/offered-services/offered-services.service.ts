@@ -164,6 +164,7 @@ export class OfferedServicesService {
       especialista: {
         id: service.specialist.id,
         name: service.specialist.user.name,
+        profilePicture: service.specialist.profilePicture || null,
         locationCity: service.specialist.user.locationCity,
         locationCountry: service.specialist.user.locationCountry,
       },

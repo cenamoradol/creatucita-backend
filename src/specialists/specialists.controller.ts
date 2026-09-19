@@ -373,6 +373,7 @@ export class SpecialistsController {
     return {
       especialistaid: specialist.id,
       especialista_name: specialist.user.name,
+      especialista_picture: specialist.profilePicture || null,
       especialista_ciudad: specialist.user.locationCity || '',
       especialista_pais: specialist.user.locationCountry || '',
       especialista_biografia: specialist.bio || null,
