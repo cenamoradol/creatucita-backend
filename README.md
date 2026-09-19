@@ -87,18 +87,18 @@ Una vez el servidor este corriendo, ejecuta:
 ```bash
 curl -X POST http://localhost:3002/auth/create-admin \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@creatucita.com","password":"Admin123@","name":"Administrador"}'
+  -d '{"email":"admin@creatucita.com","password":"Admin123!","name":"Administrador"}'
 ```
 
 O con PowerShell:
 
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:3002/auth/create-admin" -Method Post -ContentType "application/json" -Body '{"email":"admin@creatucita.com","password":"Admin123@","name":"Administrador"}'
+Invoke-RestMethod -Uri "http://localhost:3002/auth/create-admin" -Method Post -ContentType "application/json" -Body '{"email":"admin@creatucita.com","password":"Admin123!","name":"Administrador"}'
 ```
 
 **Credenciales del admin:**
 - Email: `admin@creatucita.com`
-- Password: `Admin123@`
+- Password: `Admin123!`
 
 ## Scripts disponibles
 
