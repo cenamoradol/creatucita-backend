@@ -49,6 +49,9 @@ export class User {
   isActive: boolean;
 
   @Column({ nullable: true })
+  profilePicture: string;
+
+  @Column({ nullable: true })
   resetCode: string;
 
   @Column({ nullable: true })

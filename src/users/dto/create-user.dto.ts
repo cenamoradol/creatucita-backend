@@ -44,4 +44,8 @@ export class CreateUserDto {
 
   @IsOptional()
   resetCodeExpires?: Date;
+
+  @IsString()
+  @IsOptional()
+  profilePicture?: string;
 }
