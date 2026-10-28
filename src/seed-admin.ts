@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../src/users/entities/user.entity';
@@ -11,13 +12,18 @@ import { Schedule } from '../src/schedules/entities/schedule.entity';
 import { OfferedService } from '../src/offered-services/entities/offered-service.entity';
 
 const seedAdmin = async () => {
+  const url = process.env.DATABASE_URL;
   const dataSource = new DataSource({
     type: 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5433', 10),
-    username: process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'password123',
-    database: process.env.DB_NAME || 'creatucita',
+    ...(url
+      ? { url, ssl: { rejectUnauthorized: false } }
+      : {
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '5433', 10),
+          username: process.env.DB_USERNAME || 'postgres',
+          password: process.env.DB_PASSWORD || 'password123',
+          database: process.env.DB_NAME || 'creatucita',
+        }),
     entities: [
       User,
       Specialist,

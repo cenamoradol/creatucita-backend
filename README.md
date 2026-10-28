@@ -100,6 +100,37 @@ Invoke-RestMethod -Uri "http://localhost:3002/auth/create-admin" -Method Post -C
 - Email: `admin@creatucita.com`
 - Password: `Admin123!`
 
+### 7. Sembrar datos de prueba
+
+```bash
+npm run seed
+```
+
+Crea 20 registros en cada tabla (categorias, subcategorias, especialistas, servicios,
+horarios, citas, notas y recordatorios) mas 40 usuarios de prueba: 20 clientes y
+20 especialistas. Es idempotente, se puede ejecutar las veces que quieras sin duplicar
+datos.
+
+Ademas crea 20 especialistas mas repartidos entre las subcategorias de la **primera
+categoria** (la que muestra la pantalla de inicio de la app movil), con su servicio y
+su horario, para que el carrusel de categorias siempre devuelva resultados. Esa
+categoria recibe ademas 7 subcategorias extra (Endodoncia, Ortodoncia, Periodoncia,
+Prostodoncia, Odontopediatria, Cirugia Oral e Higiene Dental) con 3 especialistas cada una.
+
+**Credenciales de prueba** (contrasena `Test1234!` para todos):
+
+| Tipo | Email |
+|------|-------|
+| Cliente | `seed.cliente01@test.creatucita.com` |
+| Especialista | `seed.especialista01@test.creatucita.com` |
+
+Los datos del seed se distinguen por el dominio `@test.creatucita.com`, no borran nada
+de lo que ya exista en la base de datos.
+
+Los tres scripts (`seed`, `seed:admin` y la app) se connectan a la base de datos que
+indique `.env`: usan `DATABASE_URL` si esta definida (con TLS, para Render) y si no los
+campos `DB_HOST`/`DB_PORT`/`DB_USERNAME`/`DB_PASSWORD`/`DB_NAME`.
+
 ## Scripts disponibles
 
 | Comando | Descripcion |
@@ -111,6 +142,8 @@ Invoke-RestMethod -Uri "http://localhost:3002/auth/create-admin" -Method Post -C
 | `npm run lint` | Ejecuta ESLint con correccion automatica |
 | `npm run test` | Ejecuta las pruebas unitarias |
 | `npm run test:cov` | Ejecuta pruebas con cobertura |
+| `npm run seed` | Crea datos de prueba (20 por entidad) |
+| `npm run seed:admin` | Crea el usuario administrador |
 
 ## API Endpoints
 

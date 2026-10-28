@@ -32,7 +32,8 @@ import { StorageModule } from './storage/storage.module';
           synchronize: true, // Only for development
         };
         if (url) {
-          return { ...base, url };
+          // Postgres de Render exige TLS en las conexiones externas.
+          return { ...base, url, ssl: { rejectUnauthorized: false } };
         }
         return {
           ...base,
