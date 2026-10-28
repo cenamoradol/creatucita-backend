@@ -3,6 +3,7 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 
@@ -82,6 +83,21 @@ export class StorageService {
     );
 
     return this.buildPublicUrl(key);
+  }
+
+  async getObject(key: string): Promise<{ body: Buffer; contentType: string } | null> {
+    this.ensureReady();
+    try {
+      const out = await this.client!.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      const body = Buffer.from(await out.Body!.transformToByteArray());
+      return { body, contentType: out.ContentType || 'application/octet-stream' };
+    } catch (err: any) {
+      const status = err?.$metadata?.httpStatusCode;
+      if (status === 404 || err?.name === 'NoSuchKey') return null;
+      throw err;
+    }
   }
 
   async deleteByUrl(url: string): Promise<void> {

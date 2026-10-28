@@ -42,14 +42,17 @@ export class AppointmentsService {
     const minAdvanceHours = specialist.minAdvanceBooking || 4;
 
     // 3. Prevent past dates
-    const appointmentDate = new Date(`${date}T${startTime}`);
-    if (appointmentDate < new Date()) {
+    // Las citas se agendan en hora local de Honduras (UTC-6, misma zona para
+    // El Salvador, Guatemala y Mexico). El servidor corre en UTC, asi que sin
+    // esta conversion una cita de hoy a las 15:00 se ve "en el pasado".
+    const appointmentMs = this.appointmentEpochMs(date, startTime);
+    if (appointmentMs < Date.now()) {
       throw new BadRequestException('No se pueden agendar citas en el pasado');
     }
 
     // 4. Verify minimum advance booking
     const hoursUntilAppointment =
-      (appointmentDate.getTime() - Date.now()) / (1000 * 60 * 60);
+      (appointmentMs - Date.now()) / (1000 * 60 * 60);
     if (hoursUntilAppointment < minAdvanceHours) {
       throw new BadRequestException(
         `Este especialista requiere al menos ${minAdvanceHours} hora(s) de anticipación para agendar`,
@@ -224,6 +227,13 @@ export class AppointmentsService {
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
+  }
+
+  // Convierte la fecha/hora local de la cita (UTC-6) a epoch UTC.
+  private appointmentEpochMs(date: string, time: string): number {
+    const [year, month, day] = date.split('-').map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
+    return Date.UTC(year, month - 1, day, hours, minutes) + 6 * 60 * 60 * 1000;
   }
 
   private minutesToTime(minutes: number): string {
