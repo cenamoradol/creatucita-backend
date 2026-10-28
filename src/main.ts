@@ -12,7 +12,7 @@ async function bootstrap() {
   // Los GET con datos autenticados no deben cachearse (el navegador servia
   // respuestas viejas, p.ej. el contador de mensajes sin leer).
   // Sin ETag tampoco hay respuestas 304 con cuerpo vacio.
-  app.set('etag', false);
+  app.getHttpAdapter().getInstance().set('etag', false);
   app.use((req: any, res: any, next: () => void) => {
     res.setHeader('Cache-Control', 'no-store');
     next();
