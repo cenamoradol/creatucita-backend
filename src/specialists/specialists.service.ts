@@ -1,18 +1,24 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
+  ForbiddenException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan, IsNull, In } from 'typeorm';
 import { Specialist, SpecialistStatus } from './entities/specialist.entity';
 import { Note } from './entities/note.entity';
 import { Reminder } from './entities/reminder.entity';
+import { Message, MessageSenderRole } from './entities/message.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { SchedulesService } from '../schedules/schedules.service';
 import { AppointmentsService } from '../appointments/appointments.service';
 import { ApplySpecialistDto } from './dto/apply-specialist.dto';
+import { CreateMessageDto } from './dto/create-message.dto';
+
+const MAX_MESSAGES_PER_HOUR = 5;
 
 @Injectable()
 export class SpecialistsService {
@@ -23,6 +29,8 @@ export class SpecialistsService {
     private readonly noteRepository: Repository<Note>,
     @InjectRepository(Reminder)
     private readonly reminderRepository: Repository<Reminder>,
+    @InjectRepository(Message)
+    private readonly messageRepository: Repository<Message>,
     @Inject(forwardRef(() => SchedulesService))
     public readonly schedulesService: SchedulesService,
     @Inject(forwardRef(() => AppointmentsService))
@@ -44,11 +52,19 @@ export class SpecialistsService {
       where: { specialist: { id: specialist.id } },
       order: { date: 'ASC', time: 'ASC' },
     });
+    const unreadMessages = await this.messageRepository.count({
+      where: {
+        specialist: { id: specialist.id },
+        senderRole: MessageSenderRole.CLIENT,
+        readAt: IsNull(),
+      },
+    });
 
     return {
       appointments,
       notas: notes,
       recordatorios: reminders,
+      mensajesSinLeer: unreadMessages,
     };
   }
 
@@ -112,6 +128,194 @@ export class SpecialistsService {
     return { success: true };
   }
 
+  // ===================== MENSAJES =====================
+
+  async createMessageFromClient(
+    user: User,
+    specialistId: string,
+    dto: CreateMessageDto,
+  ) {
+    const specialist = await this.findOne(specialistId);
+    if (specialist.status !== SpecialistStatus.APPROVED) {
+      throw new BadRequestException('El especialista no está disponible');
+    }
+
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recent = await this.messageRepository.count({
+      where: {
+        client: { id: user.id },
+        senderRole: MessageSenderRole.CLIENT,
+        createdAt: MoreThan(oneHourAgo),
+      },
+    });
+    if (recent >= MAX_MESSAGES_PER_HOUR) {
+      throw new BadRequestException(
+        'Has enviado demasiados mensajes. Intenta de nuevo en una hora.',
+      );
+    }
+
+    const message = this.messageRepository.create({
+      specialist,
+      client: user,
+      subject: dto.subject.trim(),
+      body: dto.body.trim(),
+      senderRole: MessageSenderRole.CLIENT,
+      inReplyTo: null,
+    });
+    return await this.messageRepository.save(message);
+  }
+
+  async getInboxForSpecialist(specialistId: string) {
+    const roots = await this.messageRepository.find({
+      where: {
+        specialist: { id: specialistId },
+        inReplyTo: IsNull(),
+        senderRole: MessageSenderRole.CLIENT,
+      },
+      relations: ['client', 'specialist.user'],
+      order: { createdAt: 'DESC' },
+    });
+    return this.attachReplies(roots, MessageSenderRole.SPECIALIST);
+  }
+
+  async getSentForClient(userId: string) {
+    const roots = await this.messageRepository.find({
+      where: { client: { id: userId }, inReplyTo: IsNull() },
+      relations: ['specialist', 'specialist.user', 'client'],
+      order: { createdAt: 'DESC' },
+    });
+    return this.attachReplies(roots, MessageSenderRole.CLIENT);
+  }
+
+  async getThread(user: User, messageId: string) {
+    const target = await this.findOneMessage(messageId);
+    this.assertParticipant(user, target);
+    const rootId = target.inReplyTo || target.id;
+    const root =
+      rootId === target.id
+        ? target
+        : await this.findOneMessage(rootId);
+    const replies = await this.messageRepository.find({
+      where: { inReplyTo: rootId },
+      relations: ['client', 'specialist.user'],
+      order: { createdAt: 'ASC' },
+    });
+    await this.markReadMessages([target]);
+    return { ...root, replies };
+  }
+
+  async replyToMessage(user: User, messageId: string, body: string) {
+    const target = await this.findOneMessage(messageId);
+    this.assertParticipant(user, target);
+
+    const senderRole = await this.getSenderRole(user, target);
+    const rootId = target.inReplyTo || target.id;
+    const root =
+      rootId === target.id
+        ? target
+        : await this.findOneMessage(rootId);
+
+    await this.markReadMessages([target]);
+
+    const reply = this.messageRepository.create({
+      specialist: root.specialist,
+      client: root.client,
+      subject: root.subject,
+      body: body.trim(),
+      senderRole,
+      inReplyTo: rootId,
+    });
+    return await this.messageRepository.save(reply);
+  }
+
+  async markMessageAsRead(user: User, messageId: string) {
+    const target = await this.findOneMessage(messageId);
+    this.assertParticipant(user, target);
+    await this.markReadMessages([target]);
+    return { success: true };
+  }
+
+  async countUnread(user: User) {
+    const specialist = await this.findByUser(user.id);
+    const where = specialist
+      ? {
+          specialist: { id: specialist.id },
+          senderRole: MessageSenderRole.CLIENT,
+        }
+      : {
+          client: { id: user.id },
+          senderRole: MessageSenderRole.SPECIALIST,
+        };
+    const count = await this.messageRepository.count({
+      where: { ...where, readAt: IsNull() },
+    });
+    return { count };
+  }
+
+  private async findOneMessage(id: string) {
+    const message = await this.messageRepository.findOne({
+      where: { id },
+      relations: ['client', 'specialist', 'specialist.user'],
+    });
+    if (!message) throw new NotFoundException('Mensaje no encontrado');
+    return message;
+  }
+
+  private async getSenderRole(
+    user: User,
+    target: Message,
+  ): Promise<MessageSenderRole> {
+    const specialist = await this.findByUser(user.id);
+    if (specialist && target.specialist?.id === specialist.id) {
+      return MessageSenderRole.SPECIALIST;
+    }
+    return MessageSenderRole.CLIENT;
+  }
+
+  private assertParticipant(user: User, target: Message) {
+    const specialist = target.specialist;
+    const client = target.client;
+    const isSpecialist = specialist?.user?.id === user.id;
+    const isClient = client?.id === user.id;
+    if (!isSpecialist && !isClient) {
+      throw new ForbiddenException('No tienes acceso a este mensaje');
+    }
+  }
+
+  private async markReadMessages(messages: Message[]) {
+    const pending = messages.filter((m) => !m.readAt);
+    if (pending.length === 0) return;
+    const now = new Date();
+    pending.forEach((m) => (m.readAt = now));
+    await this.messageRepository.save(pending);
+  }
+
+  private async attachReplies(roots: Message[], viewerRole: MessageSenderRole) {
+    if (roots.length === 0) return [];
+    const replies = await this.messageRepository.find({
+      where: { inReplyTo: In(roots.map((r) => r.id)) },
+      relations: ['client'],
+      order: { createdAt: 'ASC' },
+    });
+    const byRoot = new Map<string, Message[]>();
+    replies.forEach((reply) => {
+      const list = byRoot.get(reply.inReplyTo as string) || [];
+      list.push(reply);
+      byRoot.set(reply.inReplyTo as string, list);
+    });
+    return roots.map((root) => {
+      const thread = [root, ...(byRoot.get(root.id) || [])];
+      return {
+        ...root,
+        replies: byRoot.get(root.id) || [],
+        unread: thread.some(
+          (m) => m.senderRole !== viewerRole && !m.readAt,
+        ),
+        lastMessageAt: thread[thread.length - 1].createdAt,
+      };
+    });
+  }
+
   async create(user: User): Promise<Specialist> {
     const specialist = this.specialistRepository.create({
       user,
@@ -122,7 +326,7 @@ export class SpecialistsService {
   async findByUser(userId: string): Promise<Specialist | null> {
     return await this.specialistRepository.findOne({
       where: { user: { id: userId } },
-      relations: ['user'],
+      relations: ['user', 'subcategories', 'subcategories.category'],
     });
   }
 

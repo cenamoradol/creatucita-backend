@@ -29,6 +29,8 @@ import {
 import { SpecialistsService } from './specialists.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApplySpecialistDto } from './dto/apply-specialist.dto';
+import { CreateMessageDto } from './dto/create-message.dto';
+import { ReplyMessageDto } from './dto/reply-message.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
@@ -144,6 +146,76 @@ export class SpecialistsController {
     }
 
     return updated;
+  }
+
+  // ===================== MENSAJES =====================
+  // Las rutas literales se declaran antes que ':id' para que Nest no las
+  // interprete como parámetros.
+
+  @Post(':id/messages')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Enviar un mensaje a un especialista' })
+  async createMessage(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() body: CreateMessageDto,
+  ) {
+    return this.specialistsService.createMessageFromClient(req.user, id, body);
+  }
+
+  @Get('messages/inbox')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bandeja de mensajes del especialista' })
+  async getInbox(@Request() req) {
+    const specialist = await this.specialistsService.findByUser(req.user.id);
+    if (!specialist) throw new NotFoundException('Especialista no encontrado');
+    return this.specialistsService.getInboxForSpecialist(specialist.id);
+  }
+
+  @Get('messages/sent')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mensajes enviados por el cliente' })
+  async getSent(@Request() req) {
+    return this.specialistsService.getSentForClient(req.user.id);
+  }
+
+  @Get('messages/unread-count')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cantidad de mensajes sin leer' })
+  async getUnreadCount(@Request() req) {
+    return this.specialistsService.countUnread(req.user);
+  }
+
+  @Get('messages/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Detalle de un hilo de mensajes' })
+  async getThread(@Request() req, @Param('id') id: string) {
+    return this.specialistsService.getThread(req.user, id);
+  }
+
+  @Post('messages/:id/reply')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Responder un mensaje' })
+  async replyToMessage(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() body: ReplyMessageDto,
+  ) {
+    return this.specialistsService.replyToMessage(req.user, id, body.body);
+  }
+
+  @Patch('messages/:id/read')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Marcar un mensaje como leído' })
+  async markAsRead(@Request() req, @Param('id') id: string) {
+    return this.specialistsService.markMessageAsRead(req.user, id);
   }
 
   @Get('notes')
