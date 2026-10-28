@@ -9,6 +9,13 @@ async function bootstrap() {
   // Enable CORS
   app.enableCors();
 
+  // Los GET con datos autenticados no deben cachearse (el navegador servia
+  // respuestas viejas, p.ej. el contador de mensajes sin leer).
+  app.use((req: any, res: any, next: () => void) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
+
   // Global Validation
   app.useGlobalPipes(
     new ValidationPipe({
